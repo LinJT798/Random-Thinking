@@ -13,7 +13,7 @@ export default function AIToolbar({ node }: AIToolbarProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { addNode, setAIProcessing } = useCanvasStore();
+  const { addNode, updateNode, setAIProcessing } = useCanvasStore();
 
   // 扩写内容
   const handleExpand = async () => {
@@ -31,25 +31,9 @@ export default function AIToolbar({ node }: AIToolbarProps) {
       const response = await expandContent(node.id, node.content);
 
       if (response.success && response.content) {
-        // 在原节点旁边创建新节点
-        await addNode({
-          type: 'ai-generated',
+        // 直接更新当前节点的内容，保持原类型（透明背景）
+        updateNode(node.id, {
           content: response.content,
-          position: {
-            x: node.position.x + node.size.width + 50,
-            y: node.position.y,
-          },
-          size: {
-            width: node.size.width,
-            height: node.size.height,
-          },
-          connections: [node.id],
-          aiMetadata: {
-            source: 'ai-expanded',
-            prompt: node.content,
-            timestamp: Date.now(),
-            originalNodeId: node.id,
-          },
         });
       } else {
         setError(response.error || '扩写失败');
@@ -81,9 +65,9 @@ export default function AIToolbar({ node }: AIToolbarProps) {
       const response = await summarizeContent(node.id, node.content);
 
       if (response.success && response.content) {
-        // 在原节点上方创建新节点
+        // 在原节点上方创建新节点（普通文本节点，透明背景，无AI标志）
         await addNode({
-          type: 'ai-generated',
+          type: 'text',
           content: response.content,
           position: {
             x: node.position.x,
@@ -94,12 +78,6 @@ export default function AIToolbar({ node }: AIToolbarProps) {
             height: 200,
           },
           connections: [node.id],
-          aiMetadata: {
-            source: 'ai-summarized',
-            prompt: node.content,
-            timestamp: Date.now(),
-            originalNodeId: node.id,
-          },
         });
       } else {
         setError(response.error || '总结失败');
@@ -116,27 +94,57 @@ export default function AIToolbar({ node }: AIToolbarProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex flex-col gap-1.5">
       <button
         onClick={handleExpand}
         disabled={isProcessing}
-        className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+        className="bg-purple-500/20 hover:bg-purple-500/30 text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium transition-all border border-purple-400/30"
         title="AI 扩写这段内容"
       >
-        {isProcessing ? '处理中...' : '✨ 扩写'}
+        {isProcessing ? (
+          <>
+            <svg className="animate-spin h-2.5 w-2.5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>处理中</span>
+          </>
+        ) : (
+          <>
+            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>扩写</span>
+          </>
+        )}
       </button>
 
       <button
         onClick={handleSummarize}
         disabled={isProcessing}
-        className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+        className="bg-blue-500/20 hover:bg-blue-500/30 text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium transition-all border border-blue-400/30"
         title="AI 总结这段内容"
       >
-        {isProcessing ? '处理中...' : '📝 总结'}
+        {isProcessing ? (
+          <>
+            <svg className="animate-spin h-2.5 w-2.5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>处理中</span>
+          </>
+        ) : (
+          <>
+            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <span>总结</span>
+          </>
+        )}
       </button>
 
       {error && (
-        <div className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm">
+        <div className="bg-red-500/20 text-red-200 px-2.5 py-1 rounded text-[10px] font-medium border border-red-400/30">
           {error}
         </div>
       )}

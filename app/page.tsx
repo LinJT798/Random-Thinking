@@ -44,11 +44,6 @@ export default function Home() {
     <main className="relative w-full h-screen overflow-hidden">
       <Canvas canvasId={canvasId} />
       <CanvasToolbar />
-
-      {/* 标题 */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg px-6 py-3">
-        <h1 className="text-xl font-bold text-gray-800">无边记 AI - 思维扩展画布</h1>
-      </div>
     </main>
   );
 }

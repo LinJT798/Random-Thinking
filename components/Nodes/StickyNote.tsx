@@ -13,11 +13,11 @@ interface StickyNoteProps {
 }
 
 const COLORS = [
-  { name: 'yellow', bg: 'bg-yellow-200', border: 'border-yellow-300' },
-  { name: 'pink', bg: 'bg-pink-200', border: 'border-pink-300' },
-  { name: 'blue', bg: 'bg-blue-200', border: 'border-blue-300' },
-  { name: 'green', bg: 'bg-green-200', border: 'border-green-300' },
-  { name: 'purple', bg: 'bg-purple-200', border: 'border-purple-300' },
+  { name: 'yellow', bg: 'bg-yellow-100/90', border: 'border-yellow-200/50' },
+  { name: 'pink', bg: 'bg-pink-100/90', border: 'border-pink-200/50' },
+  { name: 'blue', bg: 'bg-blue-100/90', border: 'border-blue-200/50' },
+  { name: 'green', bg: 'bg-green-100/90', border: 'border-green-200/50' },
+  { name: 'purple', bg: 'bg-purple-100/90', border: 'border-purple-200/50' },
 ];
 
 export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyNoteProps) {
@@ -25,6 +25,9 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const [content, setContent] = useState(node.content);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showAIToolbar, setShowAIToolbar] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   const { updateNode, deleteNode } = useCanvasStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -32,6 +35,11 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
 
   // 获取当前颜色
   const currentColor = COLORS.find(c => c.name === node.color) || COLORS[0];
+
+  // 同步node.content到本地state
+  useEffect(() => {
+    setContent(node.content);
+  }, [node.content]);
 
   // 自动聚焦编辑框
   useEffect(() => {
@@ -49,13 +57,41 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     }
   };
 
-  // 处理键盘事件
+  // 处理键盘事件（编辑模式）
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsEditing(false);
       setContent(node.content);
     }
   };
+
+  // 全局键盘事件监听（选中时）
+  useEffect(() => {
+    if (!isSelected || isEditing) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Tab 键切换 AI 工具栏
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        setShowAIToolbar(prev => !prev);
+      }
+      // Delete 或 Backspace 键删除节点
+      else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteNode(node.id);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isSelected, isEditing, node.id, deleteNode]);
+
+  // 失去选中时隐藏 AI 工具栏
+  useEffect(() => {
+    if (!isSelected) {
+      setShowAIToolbar(false);
+    }
+  }, [isSelected]);
 
   // 双击编辑
   const handleDoubleClick = () => {
@@ -64,20 +100,33 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
 
   // 拖拽开始
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isEditing) return;
+    if (isEditing || isResizing) return;
 
     onSelect();
     setIsDragging(true);
 
-    const rect = nodeRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: (e.clientX - rect.left) / zoom,
-        y: (e.clientY - rect.top) / zoom,
-      });
-    }
+    // 记录开始拖动时的鼠标位置和节点位置
+    setDragOffset({
+      x: e.clientX / zoom - node.position.x,
+      y: e.clientY / zoom - node.position.y,
+    });
 
     e.stopPropagation();
+  };
+
+  // 调整大小开始
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    onSelect();
+    setIsResizing(true);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: node.size.width || 200,
+      height: node.size.height || 200,
+    });
   };
 
   // 拖拽中
@@ -106,25 +155,48 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     };
   }, [isDragging, dragOffset, zoom, node.id, updateNode]);
 
+  // 调整大小中
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = (e.clientX - resizeStart.x) / zoom;
+      const deltaY = (e.clientY - resizeStart.y) / zoom;
+
+      const newWidth = Math.max(150, resizeStart.width + deltaX);
+      const newHeight = Math.max(150, resizeStart.height + deltaY);
+
+      updateNode(node.id, {
+        size: { width: newWidth, height: newHeight },
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeStart, zoom, node.id, updateNode]);
+
   // 改变颜色
   const changeColor = (colorName: string) => {
     updateNode(node.id, { color: colorName });
-  };
-
-  // 删除节点
-  const handleDelete = () => {
-    if (confirm('确定要删除这个便签吗？')) {
-      deleteNode(node.id);
-    }
   };
 
   return (
     <div
       ref={nodeRef}
       className={`
-        absolute cursor-move select-none
+        absolute select-none
         ${isSelected ? 'ring-2 ring-blue-500' : ''}
-        ${isDragging ? 'opacity-70' : ''}
+        ${isDragging ? 'opacity-70 cursor-move' : 'cursor-move'}
+        ${isResizing ? 'cursor-nwse-resize' : ''}
       `}
       style={{
         left: node.position.x,
@@ -164,32 +236,40 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
           </div>
         )}
 
-        {/* 工具栏（仅在选中时显示） */}
+        {/* Tab 提示和工具栏 */}
         {isSelected && !isEditing && (
-          <div className="absolute -bottom-12 left-0 right-0 flex justify-center gap-2">
-            {/* AI 工具栏 */}
-            <AIToolbar node={node} />
-
-            {/* 颜色选择 */}
-            <div className="bg-white rounded shadow-lg p-2 flex gap-2">
-              {COLORS.map(color => (
-                <button
-                  key={color.name}
-                  onClick={() => changeColor(color.name)}
-                  className={`w-6 h-6 rounded-full ${color.bg} ${color.border} border-2 hover:scale-110 transition-transform`}
-                  title={color.name}
-                />
-              ))}
-            </div>
-
-            {/* 删除按钮 */}
-            <button
-              onClick={handleDelete}
-              className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
-            >
-              删除
-            </button>
+          <div className="absolute -right-2 top-2 flex flex-col gap-2 items-end">
+            {!showAIToolbar ? (
+              // Tab 提示
+              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
+                <span>AI</span>
+              </div>
+            ) : (
+              // AI 工具栏和颜色选择
+              <>
+                <AIToolbar node={node} />
+                <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex gap-1.5">
+                  {COLORS.map(color => (
+                    <button
+                      key={color.name}
+                      onClick={() => changeColor(color.name)}
+                      className={`w-5 h-5 rounded ${color.bg} ${color.border} border hover:scale-110 transition-transform shadow-sm`}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+        )}
+
+        {/* 调整大小手柄 */}
+        {isSelected && !isEditing && (
+          <div
+            className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors"
+            onMouseDown={handleResizeStart}
+          />
         )}
       </div>
     </div>

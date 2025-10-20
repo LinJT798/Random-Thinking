@@ -19,6 +19,10 @@ interface CanvasStore {
   // AI 处理状态
   aiProcessing: boolean;
 
+  // 历史记录
+  history: CanvasNode[][];
+  future: CanvasNode[][];
+
   // Actions
   setCurrentCanvas: (canvas: CanvasData) => void;
   loadCanvas: (canvasId: string) => Promise<void>;
@@ -33,6 +37,9 @@ interface CanvasStore {
   clearSelection: () => void;
 
   setAIProcessing: (processing: boolean) => void;
+
+  undo: () => void;
+  redo: () => void;
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -42,6 +49,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   selectedNodeIds: [],
   loading: false,
   aiProcessing: false,
+  history: [],
+  future: [],
 
   setCurrentCanvas: (canvas) => set({ currentCanvas: canvas, currentCanvasId: canvas.id }),
 
@@ -78,7 +87,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   addNode: async (node) => {
-    const { currentCanvasId, nodes } = get();
+    const { currentCanvasId, nodes, history } = get();
     if (!currentCanvasId) {
       throw new Error('No canvas selected');
     }
@@ -87,7 +96,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const newNode = await db.nodes.get(nodeId);
 
     if (newNode) {
-      set({ nodes: [...nodes, newNode] });
+      // 保存历史记录
+      set({
+        nodes: [...nodes, newNode],
+        history: [...history, nodes],
+        future: [] // 清空重做历史
+      });
     }
 
     return nodeId;
@@ -96,25 +110,31 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   updateNode: async (nodeId, updates) => {
     await db.updateNode(nodeId, updates);
 
-    const { nodes } = get();
+    const { nodes, history } = get();
+    const updatedNodes = nodes.map(node =>
+      node.id === nodeId
+        ? { ...node, ...updates, updatedAt: Date.now() }
+        : node
+    );
+
     set({
-      nodes: nodes.map(node =>
-        node.id === nodeId
-          ? { ...node, ...updates, updatedAt: Date.now() }
-          : node
-      )
+      nodes: updatedNodes,
+      history: [...history, nodes],
+      future: [] // 清空重做历史
     });
   },
 
   deleteNode: async (nodeId) => {
-    const { currentCanvasId, nodes, selectedNodeIds } = get();
+    const { currentCanvasId, nodes, selectedNodeIds, history } = get();
     if (!currentCanvasId) return;
 
     await db.deleteNode(currentCanvasId, nodeId);
 
     set({
       nodes: nodes.filter(node => node.id !== nodeId),
-      selectedNodeIds: selectedNodeIds.filter(id => id !== nodeId)
+      selectedNodeIds: selectedNodeIds.filter(id => id !== nodeId),
+      history: [...history, nodes],
+      future: [] // 清空重做历史
     });
   },
 
@@ -133,4 +153,45 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   clearSelection: () => set({ selectedNodeIds: [] }),
 
   setAIProcessing: (processing) => set({ aiProcessing: processing }),
+
+  undo: () => {
+    const { history, nodes, future } = get();
+    if (history.length === 0) return;
+
+    const previousNodes = history[history.length - 1];
+    const newHistory = history.slice(0, -1);
+
+    set({
+      nodes: previousNodes,
+      history: newHistory,
+      future: [nodes, ...future]
+    });
+
+    // 同步到数据库
+    const { currentCanvasId } = get();
+    if (currentCanvasId) {
+      // 这里简化处理，实际应该差异更新
+      previousNodes.forEach(node => db.updateNode(node.id, node));
+    }
+  },
+
+  redo: () => {
+    const { future, nodes, history } = get();
+    if (future.length === 0) return;
+
+    const nextNodes = future[0];
+    const newFuture = future.slice(1);
+
+    set({
+      nodes: nextNodes,
+      history: [...history, nodes],
+      future: newFuture
+    });
+
+    // 同步到数据库
+    const { currentCanvasId } = get();
+    if (currentCanvasId) {
+      nextNodes.forEach(node => db.updateNode(node.id, node));
+    }
+  },
 }));

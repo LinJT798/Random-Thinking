@@ -39,12 +39,12 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${process.env.ANTHROPIC_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 1024,
         messages: [
           {
             role: 'user',
-            content: `请将以下简短的想法或笔记扩展成更详细、更完整的内容。保持原意，但增加细节、解释和背景信息。用中文回复。
+            content: `请对以下简短的想法或笔记进行续写，扩展成更详细、更完整的内容。保持已有原文内容，但增加后续，仅续写一句内容，用中文回复。
 
 原始内容：
 ${content}
