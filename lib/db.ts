@@ -1,12 +1,12 @@
 import Dexie, { Table } from 'dexie';
-import type { CanvasData, CanvasNode, ChatMessage } from '@/types';
+import type { CanvasData, CanvasNode, ChatSession } from '@/types';
 
 // 扩展 Dexie 数据库类
 export class CanvasDatabase extends Dexie {
   // 声明表
   canvases!: Table<CanvasData>;
   nodes!: Table<CanvasNode>;
-  chatMessages!: Table<ChatMessage>;
+  chatSessions!: Table<ChatSession>;
 
   constructor() {
     super('InfiniteCanvasDB');
@@ -17,11 +17,19 @@ export class CanvasDatabase extends Dexie {
       nodes: 'id, type, createdAt, updatedAt, [aiMetadata.source]'
     });
 
-    // 升级到版本 2，添加聊天消息表
+    // 升级到版本 2，添加聊天消息表（已废弃）
     this.version(2).stores({
       canvases: 'id, name, createdAt, updatedAt',
       nodes: 'id, type, createdAt, updatedAt, [aiMetadata.source]',
       chatMessages: 'id, canvasId, timestamp'
+    });
+
+    // 升级到版本 3，改用聊天会话表
+    this.version(3).stores({
+      canvases: 'id, name, createdAt, updatedAt',
+      nodes: 'id, type, createdAt, updatedAt, [aiMetadata.source]',
+      chatMessages: null, // 删除旧表
+      chatSessions: 'id, canvasId, createdAt, updatedAt'
     });
   }
 
@@ -114,37 +122,42 @@ export class CanvasDatabase extends Dexie {
     await this.canvases.delete(id);
   }
 
-  // 添加聊天消息
-  async addChatMessage(canvasId: string, role: 'user' | 'assistant', content: string): Promise<string> {
-    const message: ChatMessage = {
-      id: crypto.randomUUID(),
-      canvasId,
-      role,
-      content,
-      timestamp: Date.now()
-    };
-
-    await this.chatMessages.add(message);
-    return message.id;
+  // 创建聊天会话
+  async createChatSession(session: ChatSession): Promise<string> {
+    await this.chatSessions.add(session);
+    return session.id;
   }
 
-  // 获取画布的聊天历史
-  async getChatHistory(canvasId: string): Promise<ChatMessage[]> {
-    return await this.chatMessages
+  // 获取画布的所有聊天会话
+  async getChatSessions(canvasId: string): Promise<ChatSession[]> {
+    return await this.chatSessions
       .where('canvasId')
       .equals(canvasId)
-      .sortBy('timestamp');
+      .sortBy('createdAt');
   }
 
-  // 清空画布的聊天历史
-  async clearChatHistory(canvasId: string): Promise<void> {
-    const messages = await this.chatMessages
+  // 更新聊天会话
+  async updateChatSession(sessionId: string, updates: Partial<ChatSession>): Promise<void> {
+    await this.chatSessions.update(sessionId, {
+      ...updates,
+      updatedAt: Date.now()
+    });
+  }
+
+  // 删除聊天会话
+  async deleteChatSession(sessionId: string): Promise<void> {
+    await this.chatSessions.delete(sessionId);
+  }
+
+  // 清空画布的所有聊天会话
+  async clearAllChatSessions(canvasId: string): Promise<void> {
+    const sessions = await this.chatSessions
       .where('canvasId')
       .equals(canvasId)
       .toArray();
 
-    const messageIds = messages.map(m => m.id);
-    await this.chatMessages.bulkDelete(messageIds);
+    const sessionIds = sessions.map(s => s.id);
+    await this.chatSessions.bulkDelete(sessionIds);
   }
 }
 

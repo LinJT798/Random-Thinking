@@ -54,7 +54,8 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
 
   return (
     <div
-      className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-2 flex flex-col gap-2 w-[160px]"
+      className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-2 flex flex-col gap-2 w-[160px] animate-in fade-in-0 zoom-in-95 duration-200"
+      style={{ transformOrigin: 'top left' }}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
@@ -74,7 +75,7 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
             }
           }}
           onKeyDown={(e) => e.stopPropagation()}
-          className="w-full px-3 py-1.5 text-sm rounded border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:outline-none transition-colors"
+          className="w-full px-3 py-1.5 text-sm text-gray-900 rounded border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:outline-none transition-colors"
           placeholder="字体大小 (8-72)"
         />
       </div>

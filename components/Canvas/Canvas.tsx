@@ -22,7 +22,7 @@ export default function Canvas({ canvasId }: CanvasProps) {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<Position>({ x: 0, y: 0 });
 
-  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, isChatOpen } = useCanvasStore();
+  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, chatSessions } = useCanvasStore();
 
   // 加载画布数据
   useEffect(() => {
@@ -52,6 +52,22 @@ export default function Canvas({ canvasId }: CanvasProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
+
+  // 监听焦点节点事件，移动视角
+  useEffect(() => {
+    const handleFocusNode = (e: CustomEvent) => {
+      const { x, y } = e.detail;
+
+      // 计算视角偏移，使节点居中显示
+      const newOffsetX = window.innerWidth / 2 - x * zoom;
+      const newOffsetY = window.innerHeight / 2 - y * zoom;
+
+      setViewportOffset({ x: newOffsetX, y: newOffsetY });
+    };
+
+    window.addEventListener('focusNode', handleFocusNode as EventListener);
+    return () => window.removeEventListener('focusNode', handleFocusNode as EventListener);
+  }, [zoom]);
 
   // 处理画布点击（取消选择）
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
@@ -254,13 +270,19 @@ export default function Canvas({ canvasId }: CanvasProps) {
       </div>
 
       {/* 左上角按钮组 */}
-      <div className="absolute top-6 left-6 flex items-center gap-2">
+      <div className="absolute top-6 left-6">
         <ChatButton />
+      </div>
+      <div className="absolute top-6 left-20">
         <HelpButton />
       </div>
 
       {/* 聊天窗口 */}
-      {isChatOpen && <ChatWindow />}
+      {chatSessions
+        .filter(session => session.isOpen)
+        .map(session => (
+          <ChatWindow key={session.id} chatId={session.id} />
+        ))}
     </div>
   );
 }

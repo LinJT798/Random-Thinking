@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CanvasNode, CanvasData, LayoutType, ChatMessage, ChatReference } from '@/types';
+import type { CanvasNode, CanvasData, LayoutType, ChatMessage, ChatReference, ChatSession } from '@/types';
 import { db } from './db';
 import { calculateMindMapLayout, getAllDescendantIds } from './mindmap-layout';
 
@@ -47,28 +47,31 @@ interface CanvasStore {
   toggleNodeCollapse: (nodeId: string) => Promise<void>;
   applyAutoLayout: (rootNodeId: string, layoutType?: LayoutType) => Promise<void>;
 
-  // 聊天相关状态
-  chatMessages: ChatMessage[];
-  isChatOpen: boolean;
-  chatWindowPosition: { x: number; y: number };
-  chatWindowSize: { width: number; height: number };
-  chatStartTimestamp: number | null;
-  initialNodeSnapshot: string[] | null;
-  chatReferences: ChatReference[];
+  // 聊天相关状态 - 多会话支持
+  chatSessions: ChatSession[];
+  currentChatId: string | null;
+  chatListExpanded: boolean; // 聊天列表是否展开
 
   // 聊天方法
-  openChat: () => Promise<void>;
-  closeChat: () => void;
-  toggleChat: () => Promise<void>;
-  sendChatMessage: (content: string) => Promise<void>;
-  addChatMessage: (role: 'user' | 'assistant', content: string, references?: ChatReference[]) => Promise<void>;
-  loadChatHistory: () => Promise<void>;
-  clearChatHistory: () => Promise<void>;
-  setChatWindowPosition: (position: { x: number; y: number }) => void;
-  setChatWindowSize: (size: { width: number; height: number }) => void;
-  addChatReference: (nodeId: string, content: string) => void;
-  removeChatReference: (referenceId: string) => void;
-  clearChatReferences: () => void;
+  createChatSession: () => string;
+  openChatSession: (chatId: string) => void;
+  closeChatSession: (chatId: string) => void;
+  toggleChatList: () => void;
+  switchChat: (chatId: string) => void;
+  deleteChatSession: (chatId: string) => Promise<void>;
+
+  sendChatMessage: (chatId: string, content: string) => Promise<void>;
+  addChatMessage: (chatId: string, role: 'user' | 'assistant', content: string, references?: ChatReference[]) => Promise<void>;
+  loadChatHistory: (chatId: string) => Promise<void>;
+  clearChatHistory: (chatId: string) => Promise<void>;
+
+  setChatWindowPosition: (chatId: string, position: { x: number; y: number }) => void;
+  setChatWindowSize: (chatId: string, size: { width: number; height: number }) => void;
+  updateChatName: (chatId: string, name: string) => void;
+
+  addChatReference: (chatId: string, nodeId: string, content: string) => void;
+  removeChatReference: (chatId: string, referenceId: string) => void;
+  clearChatReferences: (chatId: string) => void;
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -81,14 +84,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   history: [],
   future: [],
 
-  // 聊天初始状态
-  chatMessages: [],
-  isChatOpen: false,
-  chatWindowPosition: { x: typeof window !== 'undefined' ? window.innerWidth - 450 : 800, y: 50 },
-  chatWindowSize: { width: 400, height: 600 },
-  chatStartTimestamp: null,
-  initialNodeSnapshot: null,
-  chatReferences: [],
+  // 聊天初始状态 - 多会话
+  chatSessions: [],
+  currentChatId: null,
+  chatListExpanded: false,
 
   setCurrentCanvas: (canvas) => set({ currentCanvas: canvas, currentCanvasId: canvas.id }),
 
@@ -98,10 +97,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const canvas = await db.getCanvas(canvasId);
       if (canvas) {
         const nodes = await db.getCanvasNodes(canvasId);
+        const chatSessions = await db.getChatSessions(canvasId);
         set({
           currentCanvas: canvas,
           currentCanvasId: canvasId,
           nodes,
+          chatSessions,
           loading: false
         });
       }
@@ -357,51 +358,113 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     });
   },
 
-  // 打开聊天窗口
-  openChat: async () => {
-    const { currentCanvasId, nodes } = get();
-    if (!currentCanvasId) return;
+  // 创建新的聊天会话
+  createChatSession: () => {
+    const { currentCanvasId, nodes, chatSessions } = get();
+    if (!currentCanvasId) return '';
 
-    // 记录快照和时间戳
+    const chatId = crypto.randomUUID();
     const timestamp = Date.now();
-    const nodeIds = nodes.map(n => n.id);
+    const sessionNumber = chatSessions.length + 1;
 
-    // 加载历史消息
-    const history = await db.getChatHistory(currentCanvasId);
+    const newSession: ChatSession = {
+      id: chatId,
+      canvasId: currentCanvasId,
+      name: `Chat ${sessionNumber}`,
+      messages: [],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      isOpen: true,
+      position: {
+        x: typeof window !== 'undefined' ? window.innerWidth - 450 - (chatSessions.filter(s => s.isOpen).length * 50) : 800,
+        y: 50 + (chatSessions.filter(s => s.isOpen).length * 50)
+      },
+      size: { width: 400, height: 600 },
+      startTimestamp: timestamp,
+      initialNodeSnapshot: nodes.map(n => n.id),
+      references: [],
+    };
 
     set({
-      isChatOpen: true,
-      chatStartTimestamp: timestamp,
-      initialNodeSnapshot: nodeIds,
-      chatMessages: history,
+      chatSessions: [...chatSessions, newSession],
+      currentChatId: chatId,
+    });
+
+    // 保存到数据库
+    db.createChatSession(newSession);
+
+    return chatId;
+  },
+
+  // 打开聊天会话
+  openChatSession: (chatId) => {
+    const { chatSessions } = get();
+    set({
+      chatSessions: chatSessions.map(session =>
+        session.id === chatId ? { ...session, isOpen: true } : session
+      ),
+      currentChatId: chatId,
     });
   },
 
-  // 关闭聊天窗口
-  closeChat: () => {
-    set({ isChatOpen: false });
+  // 关闭聊天会话
+  closeChatSession: (chatId) => {
+    const { chatSessions, currentChatId } = get();
+    set({
+      chatSessions: chatSessions.map(session =>
+        session.id === chatId ? { ...session, isOpen: false } : session
+      ),
+      currentChatId: currentChatId === chatId ? null : currentChatId,
+    });
   },
 
-  // 切换聊天窗口
-  toggleChat: async () => {
-    const { isChatOpen, openChat, closeChat } = get();
-    if (isChatOpen) {
-      closeChat();
+  // 切换聊天列表展开状态
+  toggleChatList: () => {
+    set((state) => ({ chatListExpanded: !state.chatListExpanded }));
+  },
+
+  // 切换到指定聊天
+  switchChat: (chatId) => {
+    const { chatSessions } = get();
+    const session = chatSessions.find(s => s.id === chatId);
+    if (!session) return;
+
+    if (!session.isOpen) {
+      // 如果没打开，打开它
+      set({
+        chatSessions: chatSessions.map(s =>
+          s.id === chatId ? { ...s, isOpen: true } : s
+        ),
+        currentChatId: chatId,
+      });
     } else {
-      await openChat();
+      // 如果已打开，只是切换当前激活
+      set({ currentChatId: chatId });
     }
   },
 
+  // 删除聊天会话
+  deleteChatSession: async (chatId) => {
+    const { chatSessions, currentChatId } = get();
+
+    // 从数据库删除
+    await db.deleteChatSession(chatId);
+
+    const newSessions = chatSessions.filter(s => s.id !== chatId);
+    set({
+      chatSessions: newSessions,
+      currentChatId: currentChatId === chatId ? null : currentChatId,
+    });
+  },
+
   // 发送聊天消息
-  sendChatMessage: async (content: string) => {
-    const { currentCanvasId, addChatMessage } = get();
-    if (!currentCanvasId || !content.trim()) return;
+  sendChatMessage: async (chatId, content) => {
+    const { addChatMessage } = get();
+    if (!content.trim()) return;
 
     try {
       // 添加用户消息到本地和数据库
-      await addChatMessage('user', content);
-
-      // 调用 API 发送消息（这里简化处理，实际应该在组件中处理流式响应）
+      await addChatMessage(chatId, 'user', content);
       // API 调用会在 ChatWindow 组件中处理
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -409,66 +472,118 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   // 添加聊天消息
-  addChatMessage: async (role: 'user' | 'assistant', content: string, references?: ChatReference[]) => {
-    const { currentCanvasId, chatMessages } = get();
+  addChatMessage: async (chatId, role, content, references) => {
+    const { chatSessions, currentCanvasId } = get();
     if (!currentCanvasId) return;
 
-    // 保存到数据库（注意：db 层不存储 references，因为它们是临时的）
-    const messageId = await db.addChatMessage(currentCanvasId, role, content);
+    const session = chatSessions.find(s => s.id === chatId);
+    if (!session) return;
 
-    // 更新本地状态
+    // 创建新消息
     const newMessage: ChatMessage = {
-      id: messageId,
+      id: crypto.randomUUID(),
       canvasId: currentCanvasId,
       role,
       content,
       timestamp: Date.now(),
-      references: references, // 添加引用内容
+      references,
     };
 
+    // 更新会话
+    const updatedSession = {
+      ...session,
+      messages: [...session.messages, newMessage],
+      updatedAt: Date.now(),
+    };
+
+    // 更新本地状态
     set({
-      chatMessages: [...chatMessages, newMessage],
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? updatedSession : s
+      ),
+    });
+
+    // 保存到数据库
+    await db.updateChatSession(chatId, {
+      messages: updatedSession.messages,
+      updatedAt: updatedSession.updatedAt,
     });
   },
 
-  // 加载聊天历史
+  // 加载聊天历史（从数据库加载会话）
   loadChatHistory: async () => {
-    const { currentCanvasId } = get();
-    if (!currentCanvasId) return;
-
-    const history = await db.getChatHistory(currentCanvasId);
-    set({ chatMessages: history });
+    // 聊天历史已经在会话对象中，不需要单独加载
+    // 如果需要从数据库重新加载，可以用 loadCanvas 方法
   },
 
   // 清空聊天历史
-  clearChatHistory: async () => {
-    const { currentCanvasId } = get();
-    if (!currentCanvasId) return;
+  clearChatHistory: async (chatId) => {
+    const { chatSessions, nodes } = get();
 
-    await db.clearChatHistory(currentCanvasId);
+    const updatedSession = chatSessions.find(s => s.id === chatId);
+    if (!updatedSession) return;
+
+    const clearedSession = {
+      ...updatedSession,
+      messages: [],
+      startTimestamp: Date.now(),
+      initialNodeSnapshot: nodes.map(n => n.id),
+      updatedAt: Date.now(),
+    };
+
     set({
-      chatMessages: [],
-      chatStartTimestamp: Date.now(),
-      initialNodeSnapshot: get().nodes.map(n => n.id),
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? clearedSession : s
+      ),
+    });
+
+    // 保存到数据库
+    await db.updateChatSession(chatId, {
+      messages: [],
+      startTimestamp: clearedSession.startTimestamp,
+      initialNodeSnapshot: clearedSession.initialNodeSnapshot,
+      updatedAt: clearedSession.updatedAt,
     });
   },
 
   // 设置聊天窗口位置
-  setChatWindowPosition: (position) => {
-    set({ chatWindowPosition: position });
+  setChatWindowPosition: (chatId, position) => {
+    const { chatSessions } = get();
+    set({
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? { ...s, position } : s
+      ),
+    });
   },
 
   // 设置聊天窗口大小
-  setChatWindowSize: (size) => {
-    set({ chatWindowSize: size });
+  setChatWindowSize: (chatId, size) => {
+    const { chatSessions } = get();
+    set({
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? { ...s, size } : s
+      ),
+    });
+  },
+
+  // 更新聊天名称
+  updateChatName: (chatId, name) => {
+    const { chatSessions } = get();
+    set({
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? { ...s, name, updatedAt: Date.now() } : s
+      ),
+    });
   },
 
   // 添加聊天引用
-  addChatReference: (nodeId, content) => {
-    const { chatReferences } = get();
+  addChatReference: (chatId, nodeId, content) => {
+    const { chatSessions } = get();
+    const session = chatSessions.find(s => s.id === chatId);
+    if (!session) return;
 
     // 检查是否已经引用了这个节点
-    if (chatReferences.some(ref => ref.nodeId === nodeId)) {
+    if (session.references.some(ref => ref.nodeId === nodeId)) {
       return;
     }
 
@@ -480,20 +595,33 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     };
 
     set({
-      chatReferences: [...chatReferences, newReference],
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId
+          ? { ...s, references: [...s.references, newReference] }
+          : s
+      ),
     });
   },
 
   // 移除聊天引用
-  removeChatReference: (referenceId) => {
-    const { chatReferences } = get();
+  removeChatReference: (chatId, referenceId) => {
+    const { chatSessions } = get();
     set({
-      chatReferences: chatReferences.filter(ref => ref.id !== referenceId),
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId
+          ? { ...s, references: s.references.filter(ref => ref.id !== referenceId) }
+          : s
+      ),
     });
   },
 
   // 清空所有引用
-  clearChatReferences: () => {
-    set({ chatReferences: [] });
+  clearChatReferences: (chatId) => {
+    const { chatSessions } = get();
+    set({
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? { ...s, references: [] } : s
+      ),
+    });
   },
 }));

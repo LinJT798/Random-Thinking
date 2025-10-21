@@ -13,7 +13,9 @@ export default function AIToolbar({ node }: AIToolbarProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { addNode, updateNode, setAIProcessing, isChatOpen, addChatReference } = useCanvasStore();
+  const { addNode, updateNode, setAIProcessing, chatSessions, addChatReference } = useCanvasStore();
+
+  const hasOpenChats = chatSessions.some(s => s.isOpen);
 
   // 扩写内容
   const handleExpand = async () => {
@@ -101,11 +103,18 @@ export default function AIToolbar({ node }: AIToolbarProps) {
       return;
     }
 
-    addChatReference(node.id, node.content);
+    // Add to all open chats
+    const openChats = chatSessions.filter(s => s.isOpen);
+    openChats.forEach(chat => {
+      addChatReference(chat.id, node.id, node.content);
+    });
   };
 
   return (
-    <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex flex-col gap-1.5">
+    <div
+      className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex flex-col gap-1.5 animate-in fade-in-0 zoom-in-95 duration-200"
+      style={{ transformOrigin: 'top left' }}
+    >
       <button
         onClick={handleExpand}
         disabled={isProcessing}
@@ -154,7 +163,7 @@ export default function AIToolbar({ node }: AIToolbarProps) {
         )}
       </button>
 
-      {isChatOpen && (
+      {hasOpenChats && (
         <button
           onClick={handleAddTo}
           disabled={isProcessing}

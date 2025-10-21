@@ -117,3 +117,19 @@ export interface ChatReference {
   content: string;
   timestamp: number;
 }
+
+// 聊天会话类型
+export interface ChatSession {
+  id: string;
+  canvasId: string;
+  name: string; // 聊天名称
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
+  isOpen: boolean; // 窗口是否打开
+  position: { x: number; y: number }; // 窗口位置
+  size: { width: number; height: number }; // 窗口大小
+  startTimestamp: number; // 聊天开始时间
+  initialNodeSnapshot: string[]; // 初始节点快照
+  references: ChatReference[]; // 当前引用
+}

@@ -58,12 +58,6 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
       handleBlur();
       // TODO: 添加同级节点逻辑
     }
-    // Tab - 添加子节点
-    else if (e.key === 'Tab') {
-      e.preventDefault();
-      handleBlur();
-      addChildNode(node.id, '');
-    }
   };
 
   // 选中状态变化时隐藏属性面板
@@ -78,8 +72,18 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
     if (!isSelected || isEditing) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Shift 键切换属性面板
-      if (e.key === 'Shift') {
+      // 检查焦点是否在可编辑元素上（input、textarea、contenteditable）
+      const target = e.target as HTMLElement;
+      const isEditableElement =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
+      // 如果焦点在可编辑元素上，不处理全局快捷键
+      if (isEditableElement) return;
+
+      // Z 键切换属性面板
+      if (e.key === 'z' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         setShowPropertyPanel(prev => !prev);
       }
@@ -87,11 +91,6 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
       else if (e.key === 'Enter') {
         e.preventDefault();
         setIsEditing(true);
-      }
-      // Tab - 添加子节点
-      else if (e.key === 'Tab') {
-        e.preventDefault();
-        addChildNode(node.id, '新节点');
       }
       // Delete 或 Backspace 键删除节点
       else if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -215,29 +214,40 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
         </div>
       </div>
 
-      {/* 属性面板和快捷键提示 */}
+      {/* 右侧按钮组 */}
       {isSelected && !isEditing && (
-        <div className="absolute -right-[100px] top-2 flex flex-col gap-2 items-end z-10">
-          {/* 属性面板 */}
-          {showPropertyPanel && <PropertyPanel node={node} />}
-
-          {/* 快捷键提示 */}
+        <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
+          {/* Z键提示 - 属性按钮 */}
           {!showPropertyPanel && (
             <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-              <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Shift</kbd>
+              <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
               <span>属性</span>
             </div>
           )}
+
+          {/* 加号按钮 - 添加子节点 */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addChildNode(node.id, '新节点');
+            }}
+            className="w-6 h-6 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            title="添加子节点"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
         </div>
       )}
 
-      {/* 层级指示器 */}
-      {level > 0 && (
-        <div
-          className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-indigo-400"
-          style={{ opacity: Math.max(0.3, 1 - level * 0.15) }}
-        />
+      {/* 属性面板 */}
+      {isSelected && !isEditing && showPropertyPanel && (
+        <div className="absolute -right-[170px] top-1/2 -translate-y-1/2 z-10">
+          <PropertyPanel node={node} />
+        </div>
       )}
+
     </div>
   );
 }

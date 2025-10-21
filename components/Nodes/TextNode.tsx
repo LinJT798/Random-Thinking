@@ -23,7 +23,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode } = useCanvasStore();
+  const { updateNode, deleteNode, addNode } = useCanvasStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -63,8 +63,18 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
     if (!isSelected || isEditing) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Shift 键切换属性面板
-      if (e.key === 'Shift') {
+      // 检查焦点是否在可编辑元素上（input、textarea、contenteditable）
+      const target = e.target as HTMLElement;
+      const isEditableElement =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
+      // 如果焦点在可编辑元素上，不处理全局快捷键
+      if (isEditableElement) return;
+
+      // Z 键切换属性面板
+      if (e.key === 'z' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         setShowPropertyPanel(prev => !prev);
       }
@@ -162,8 +172,8 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
       const deltaX = (e.clientX - resizeStart.x) / zoom;
       const deltaY = (e.clientY - resizeStart.y) / zoom;
 
-      const newWidth = Math.max(200, resizeStart.width + deltaX);
-      const newHeight = Math.max(100, resizeStart.height + deltaY);
+      const newWidth = Math.max(100, resizeStart.width + deltaX);
+      const newHeight = Math.max(60, resizeStart.height + deltaY);
 
       updateNode(node.id, {
         size: { width: newWidth, height: newHeight },
@@ -185,6 +195,20 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
 
   // AI 生成的节点有特殊样式
   const isAIGenerated = node.type === 'ai-generated';
+
+  // 添加新节点
+  const handleAddNewNode = async () => {
+    const newX = node.position.x + node.size.width + 50; // 在右侧50px处
+    const newY = node.position.y;
+
+    await addNode({
+      type: 'text',
+      content: '',
+      position: { x: newX, y: newY },
+      size: { width: 300, height: 150 },
+      connections: [],
+    });
+  };
 
   // 获取当前样式
   const currentStyle = node.style || {};
@@ -208,14 +232,14 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
         left: node.position.x,
         top: node.position.y,
         width: node.size.width,
-        minHeight: node.size.height,
+        height: node.size.height,
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
     >
       <div
         className={`
-          p-4
+          h-full p-4
           ${isAIGenerated ? 'bg-gradient-to-br from-purple-50/50 to-pink-50/50 border border-purple-200/50 rounded-2xl backdrop-blur-sm' : 'rounded-lg'}
           transition-all
         `}
@@ -241,38 +265,42 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full min-h-[100px] resize-none border-none outline-none font-sans bg-transparent leading-relaxed"
+            className="w-full h-full resize-none border-none outline-none font-sans bg-transparent leading-relaxed"
             placeholder="输入内容... (Ctrl+Enter 保存, Esc 取消)"
             style={textStyle}
           />
         ) : (
-          <div className="whitespace-pre-wrap break-words min-h-[100px] leading-relaxed" style={textStyle}>
+          <div className="whitespace-pre-wrap break-words h-full leading-relaxed overflow-hidden" style={textStyle}>
             {node.content || <span className="text-gray-400">双击编辑...</span>}
           </div>
         )}
 
-        {/* 属性面板和AI工具栏 */}
+        {/* 右侧按钮组 */}
         {isSelected && !isEditing && (
-          <div className="absolute -right-[100px] top-2 flex flex-col gap-2 items-end z-10">
-            {/* 属性面板 */}
-            {showPropertyPanel && <PropertyPanel node={node} showBackgroundColor={false} />}
-
+          <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
             {/* 快捷键提示 */}
-            {!showAIToolbar && !showPropertyPanel ? (
-              <div className="flex flex-col gap-1">
+            {!showPropertyPanel && !showAIToolbar && (
+              <>
                 <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Shift</kbd>
+                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
                   <span>属性</span>
                 </div>
                 <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
                   <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
                   <span>AI</span>
                 </div>
-              </div>
-            ) : showAIToolbar ? (
-              // AI 工具栏
-              <AIToolbar node={node} />
-            ) : null}
+              </>
+            )}
+
+            {/* AI 工具栏 */}
+            {showAIToolbar && <AIToolbar node={node} />}
+          </div>
+        )}
+
+        {/* 属性面板 */}
+        {isSelected && !isEditing && showPropertyPanel && (
+          <div className="absolute -right-[220px] top-1/2 -translate-y-1/2 z-10">
+            <PropertyPanel node={node} showBackgroundColor={false} />
           </div>
         )}
 

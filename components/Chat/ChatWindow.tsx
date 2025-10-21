@@ -4,24 +4,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCanvasStore } from '@/lib/store';
 import { detectNodeChanges } from '@/lib/context-builder';
 
-export default function ChatWindow() {
-  const {
-    chatMessages,
-    closeChat,
-    addChatMessage,
-    clearChatHistory,
-    chatWindowPosition,
-    chatWindowSize,
-    setChatWindowPosition,
-    setChatWindowSize,
-    nodes,
-    initialNodeSnapshot,
-    chatStartTimestamp,
-    chatReferences,
-    removeChatReference,
-    clearChatReferences,
-  } = useCanvasStore();
+interface ChatWindowProps {
+  chatId: string;
+}
 
+export default function ChatWindow({ chatId }: ChatWindowProps) {
+  // All hooks must come first before any conditional returns
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
@@ -37,10 +25,42 @@ export default function ChatWindow() {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
+  // 标题编辑状态
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    chatSessions,
+    closeChatSession,
+    addChatMessage,
+    clearChatHistory,
+    setChatWindowPosition,
+    setChatWindowSize,
+    updateChatName,
+    addNode,
+    nodes,
+    removeChatReference,
+    clearChatReferences,
+  } = useCanvasStore();
+
+  // Get the specific chat session
+  const session = chatSessions.find(s => s.id === chatId);
+
+  // 自动滚焦到标题输入框
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
   // 自动滚动到最新消息
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, streamingMessage]);
+    if (session) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [session, session?.messages, streamingMessage]);
 
   // 处理发送消息
   const handleSend = async () => {
@@ -49,7 +69,7 @@ export default function ChatWindow() {
     const userMessage = input.trim();
 
     // 保存当前引用（拷贝一份）
-    const currentReferences = [...chatReferences];
+    const currentReferences = [...session.references];
 
     // 构建发送给 API 的完整消息（包含引用内容）
     let apiMessage = '';
@@ -68,16 +88,14 @@ export default function ChatWindow() {
 
     try {
       // 添加用户消息（只保存用户输入的文本，引用作为独立字段）
-      await addChatMessage('user', userMessage, currentReferences.length > 0 ? currentReferences : undefined);
+      await addChatMessage(chatId, 'user', userMessage, currentReferences.length > 0 ? currentReferences : undefined);
 
       // 检测节点变化
-      const nodeChanges =
-        initialNodeSnapshot && chatStartTimestamp
-          ? detectNodeChanges(nodes, initialNodeSnapshot, chatStartTimestamp)
-          : null;
+      const nodeChanges = detectNodeChanges(nodes, session.initialNodeSnapshot, session.startTimestamp);
 
       // 获取更新后的历史消息（不包括刚刚添加的用户消息，因为会在 API 中单独处理）
-      const currentChatMessages = useCanvasStore.getState().chatMessages;
+      const currentSession = useCanvasStore.getState().chatSessions.find(s => s.id === chatId);
+      const currentChatMessages = currentSession?.messages || [];
 
       // 准备 API 请求（发送完整消息包含引用）
       const response = await fetch('/api/ai/chat', {
@@ -129,12 +147,12 @@ export default function ChatWindow() {
 
       // 保存完整的 AI 回复
       if (fullMessage) {
-        await addChatMessage('assistant', fullMessage);
+        await addChatMessage(chatId, 'assistant', fullMessage);
         setStreamingMessage('');
       }
 
       // 清空引用
-      clearChatReferences();
+      clearChatReferences(chatId);
     } catch (error) {
       console.error('Error sending message:', error);
       // 可以添加错误提示
@@ -152,7 +170,130 @@ export default function ChatWindow() {
     }
   };
 
+  // 开始编辑标题
+  const handleStartEditTitle = () => {
+    if (!session) return;
+    setTitleInput(session.name);
+    setIsEditingTitle(true);
+  };
+
+  // 保存标题
+  const handleSaveTitle = () => {
+    if (titleInput.trim() && titleInput !== session?.name) {
+      updateChatName(chatId, titleInput.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  // 取消编辑标题
+  const handleCancelEditTitle = () => {
+    setIsEditingTitle(false);
+  };
+
+  // 标题输入框键盘事件
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEditTitle();
+    }
+  };
+
+  // 找到最佳的节点放置位置
+  const findBestPosition = () => {
+    const nodeWidth = 300;
+    const nodeHeight = 200;
+    const spacing = 50; // 节点之间的间距
+
+    // 如果没有节点，放在屏幕中心
+    if (nodes.length === 0) {
+      return {
+        x: window.innerWidth / 2 - nodeWidth / 2,
+        y: window.innerHeight / 2 - nodeHeight / 2,
+      };
+    }
+
+    // 找到最近创建的节点（最大的 createdAt）
+    const latestNode = nodes.reduce((latest, node) =>
+      node.createdAt > latest.createdAt ? node : latest
+    );
+
+    // 尝试在最近节点的右侧放置
+    let newX = latestNode.position.x + latestNode.size.width + spacing;
+    let newY = latestNode.position.y;
+
+    // 检查右侧位置是否与其他节点重叠
+    const wouldOverlap = (x: number, y: number) => {
+      return nodes.some(node => {
+        const horizontalOverlap =
+          x < node.position.x + node.size.width + spacing &&
+          x + nodeWidth + spacing > node.position.x;
+        const verticalOverlap =
+          y < node.position.y + node.size.height + spacing &&
+          y + nodeHeight + spacing > node.position.y;
+        return horizontalOverlap && verticalOverlap;
+      });
+    };
+
+    // 如果右侧有重叠，尝试下方
+    if (wouldOverlap(newX, newY)) {
+      newX = latestNode.position.x;
+      newY = latestNode.position.y + latestNode.size.height + spacing;
+    }
+
+    // 如果下方也有重叠，尝试右下方
+    if (wouldOverlap(newX, newY)) {
+      newX = latestNode.position.x + latestNode.size.width + spacing;
+      newY = latestNode.position.y + latestNode.size.height + spacing;
+    }
+
+    return { x: newX, y: newY };
+  };
+
+  // 将消息添加到画布
+  const handleAddToCanvas = async (content: string) => {
+    if (!session) return;
+
+    // 找到最佳放置位置
+    const position = findBestPosition();
+
+    // 创建节点
+    const nodeId = await addNode({
+      type: 'text',
+      content: content,
+      position,
+      size: { width: 300, height: 200 },
+      connections: [],
+    });
+
+    // 触发视角移动事件
+    if (nodeId) {
+      // 使用自定义事件通知 Canvas 移动视角
+      window.dispatchEvent(new CustomEvent('focusNode', {
+        detail: {
+          x: position.x + 150,  // 节点中心 x
+          y: position.y + 100   // 节点中心 y
+        }
+      }));
+    }
+  };
+
   // 拖拽处理
+  const handleDrag = useCallback((e: MouseEvent) => {
+    if (isDragging) {
+      setChatWindowPosition(chatId, {
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y,
+      });
+    }
+  }, [isDragging, dragOffset, chatId, setChatWindowPosition]);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
   const handleDragStart = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.chat-content, .chat-input')) {
       return; // 不在内容区域和输入区域触发拖拽
@@ -160,51 +301,38 @@ export default function ChatWindow() {
 
     setIsDragging(true);
     setDragOffset({
-      x: e.clientX - chatWindowPosition.x,
-      y: e.clientY - chatWindowPosition.y,
+      x: e.clientX - (session?.position.x || 0),
+      y: e.clientY - (session?.position.y || 0),
     });
   };
 
-  const handleDrag = useCallback((e: MouseEvent) => {
-    if (isDragging) {
-      setChatWindowPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y,
+  // 调整大小处理
+  const handleResize = useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+
+      setChatWindowSize(chatId, {
+        width: Math.max(300, resizeStart.width + deltaX),
+        height: Math.max(400, resizeStart.height + deltaY),
       });
     }
-  }, [isDragging, dragOffset, setChatWindowPosition]);
+  }, [isResizing, resizeStart, chatId, setChatWindowSize]);
 
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
   }, []);
 
-  // 调整大小处理
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsResizing(true);
     setResizeStart({
       x: e.clientX,
       y: e.clientY,
-      width: chatWindowSize.width,
-      height: chatWindowSize.height,
+      width: session?.size.width || 400,
+      height: session?.size.height || 600,
     });
   };
-
-  const handleResize = useCallback((e: MouseEvent) => {
-    if (isResizing) {
-      const deltaX = e.clientX - resizeStart.x;
-      const deltaY = e.clientY - resizeStart.y;
-
-      setChatWindowSize({
-        width: Math.max(300, resizeStart.width + deltaX),
-        height: Math.max(400, resizeStart.height + deltaY),
-      });
-    }
-  }, [isResizing, resizeStart, setChatWindowSize]);
-
-  const handleResizeEnd = useCallback(() => {
-    setIsResizing(false);
-  }, []);
 
   // 全局鼠标事件监听
   useEffect(() => {
@@ -229,15 +357,20 @@ export default function ChatWindow() {
     }
   }, [isResizing, handleResize, handleResizeEnd]);
 
+  // Early return after all hooks
+  if (!session) {
+    return null; // Session doesn't exist
+  }
+
   return (
     <div
       ref={windowRef}
       className="fixed bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 flex flex-col overflow-hidden"
       style={{
-        left: `${chatWindowPosition.x}px`,
-        top: `${chatWindowPosition.y}px`,
-        width: `${chatWindowSize.width}px`,
-        height: `${chatWindowSize.height}px`,
+        left: `${session.position.x}px`,
+        top: `${session.position.y}px`,
+        width: `${session.size.width}px`,
+        height: `${session.size.height}px`,
         cursor: isDragging ? 'grabbing' : 'default',
         zIndex: 1000,
       }}
@@ -248,13 +381,36 @@ export default function ChatWindow() {
         className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-white/50 cursor-grab active:cursor-grabbing"
         onMouseDown={handleDragStart}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span className="font-semibold text-gray-900">AI 思维助手</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              onBlur={handleSaveTitle}
+              onKeyDown={handleTitleKeyDown}
+              className="flex-1 font-semibold text-gray-900 bg-white/80 border border-blue-400 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              onMouseDown={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span
+              className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors truncate"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartEditTitle();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="点击编辑标题"
+            >
+              {session.name}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={clearChatHistory}
+            onClick={() => clearChatHistory(chatId)}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
             title="清空对话"
           >
@@ -263,7 +419,7 @@ export default function ChatWindow() {
             </svg>
           </button>
           <button
-            onClick={closeChat}
+            onClick={() => closeChatSession(chatId)}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
             title="关闭"
           >
@@ -276,7 +432,7 @@ export default function ChatWindow() {
 
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 chat-content">
-        {chatMessages.length === 0 && !streamingMessage && (
+        {session.messages.length === 0 && !streamingMessage && (
           <div className="text-center text-gray-400 mt-8">
             <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -286,7 +442,7 @@ export default function ChatWindow() {
           </div>
         )}
 
-        {chatMessages.map((msg) => (
+        {session.messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -321,6 +477,20 @@ export default function ChatWindow() {
               >
                 <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
               </div>
+
+              {/* AI 消息的添加到画布按钮 */}
+              {msg.role === 'assistant' && (
+                <button
+                  onClick={() => handleAddToCanvas(msg.content)}
+                  className="mt-1 text-xs text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1"
+                  title="添加到画布"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>添加到画布</span>
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -354,9 +524,9 @@ export default function ChatWindow() {
       {/* 输入区域 */}
       <div className="border-t border-gray-200/50 p-4 bg-white/50 chat-input">
         {/* 引用内容显示 */}
-        {chatReferences.length > 0 && (
+        {session.references.length > 0 && (
           <div className="mb-3 space-y-2">
-            {chatReferences.map((ref) => (
+            {session.references.map((ref) => (
               <div
                 key={ref.id}
                 className="flex items-start gap-2 bg-gray-100 rounded-lg px-3 py-2 text-sm"
@@ -368,7 +538,7 @@ export default function ChatWindow() {
                   {ref.content}
                 </div>
                 <button
-                  onClick={() => removeChatReference(ref.id)}
+                  onClick={() => removeChatReference(chatId, ref.id)}
                   className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
                   title="移除引用"
                 >
@@ -387,8 +557,7 @@ export default function ChatWindow() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
-            className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             rows={2}
             disabled={isLoading}
           />

@@ -31,7 +31,7 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode } = useCanvasStore();
+  const { updateNode, deleteNode, addNode } = useCanvasStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -72,8 +72,18 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     if (!isSelected || isEditing) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Shift 键切换属性面板
-      if (e.key === 'Shift') {
+      // 检查焦点是否在可编辑元素上（input、textarea、contenteditable）
+      const target = e.target as HTMLElement;
+      const isEditableElement =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
+      // 如果焦点在可编辑元素上，不处理全局快捷键
+      if (isEditableElement) return;
+
+      // Z 键切换属性面板
+      if (e.key === 'z' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         setShowPropertyPanel(prev => !prev);
       }
@@ -171,8 +181,8 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
       const deltaX = (e.clientX - resizeStart.x) / zoom;
       const deltaY = (e.clientY - resizeStart.y) / zoom;
 
-      const newWidth = Math.max(150, resizeStart.width + deltaX);
-      const newHeight = Math.max(150, resizeStart.height + deltaY);
+      const newWidth = Math.max(80, resizeStart.width + deltaX);
+      const newHeight = Math.max(80, resizeStart.height + deltaY);
 
       updateNode(node.id, {
         size: { width: newWidth, height: newHeight },
@@ -192,6 +202,21 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     };
   }, [isResizing, resizeStart, zoom, node.id, updateNode]);
 
+  // 添加新节点
+  const handleAddNewNode = async () => {
+    const newX = node.position.x + (node.size.width || 200) + 50; // 在右侧50px处
+    const newY = node.position.y;
+
+    await addNode({
+      type: 'sticky',
+      content: '',
+      position: { x: newX, y: newY },
+      size: { width: 200, height: 200 },
+      connections: [],
+      color: node.color, // 使用相同颜色
+    });
+  };
+
   // 获取当前样式
   const currentStyle = node.style || {};
   const textStyle = {
@@ -204,7 +229,7 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     <div
       ref={nodeRef}
       className={`
-        absolute select-none
+        absolute select-none p-4
         ${isSelected ? 'ring-2 ring-blue-500' : ''}
         ${isDragging ? 'opacity-70 cursor-move' : 'cursor-move'}
         ${isResizing ? 'cursor-nwse-resize' : ''}
@@ -213,76 +238,69 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         left: node.position.x,
         top: node.position.y,
         width: node.size.width || 200,
-        minHeight: node.size.height || 200,
+        height: node.size.height || 200,
+        backgroundImage: 'url(/stickynote.png)',
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
     >
-      <div
-        className={`
-          ${currentColor.bg} ${currentColor.border}
-          rounded-lg shadow-lg p-4 border-2
-          hover:shadow-xl transition-shadow
-          h-full
-        `}
-        style={{
-          boxShadow: '4px 4px 8px rgba(0,0,0,0.1)',
-        }}
-      >
-        {/* 内容 */}
-        {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            className={`w-full h-full resize-none border-none outline-none ${currentColor.bg} font-handwriting`}
-            placeholder="写下你的想法..."
-            style={{
-              background: 'transparent',
-              ...textStyle
-            }}
-          />
-        ) : (
-          <div className="whitespace-pre-wrap break-words h-full font-handwriting" style={textStyle}>
-            {node.content || '双击编辑...'}
-          </div>
-        )}
+      {/* 内容 */}
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className="w-full h-full resize-none border-none outline-none bg-transparent font-handwriting"
+          placeholder="写下你的想法..."
+          style={textStyle}
+        />
+      ) : (
+        <div className="whitespace-pre-wrap break-words h-full font-handwriting" style={textStyle}>
+          {node.content || '双击编辑...'}
+        </div>
+      )}
 
-        {/* 属性面板和AI工具栏 */}
-        {isSelected && !isEditing && (
-          <div className="absolute -right-[100px] top-2 flex flex-col gap-2 items-end z-10">
-            {/* 属性面板 */}
-            {showPropertyPanel && <PropertyPanel node={node} />}
-
-            {/* 快捷键提示 */}
-            {!showAIToolbar && !showPropertyPanel ? (
-              <div className="flex flex-col gap-1">
-                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Shift</kbd>
-                  <span>属性</span>
-                </div>
-                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
-                  <span>AI</span>
-                </div>
+      {/* 右侧按钮组 */}
+      {isSelected && !isEditing && (
+        <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
+          {/* 快捷键提示 */}
+          {!showPropertyPanel && !showAIToolbar && (
+            <>
+              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
+                <span>属性</span>
               </div>
-            ) : showAIToolbar ? (
-              // AI 工具栏
-              <AIToolbar node={node} />
-            ) : null}
-          </div>
-        )}
+              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
+                <span>AI</span>
+              </div>
+            </>
+          )}
 
-        {/* 调整大小手柄 */}
-        {isSelected && !isEditing && (
-          <div
-            className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors z-0"
-            onMouseDown={handleResizeStart}
-          />
-        )}
-      </div>
+          {/* AI 工具栏 */}
+          {showAIToolbar && <AIToolbar node={node} />}
+        </div>
+      )}
+
+      {/* 属性面板 */}
+      {isSelected && !isEditing && showPropertyPanel && (
+        <div className="absolute -right-[220px] top-1/2 -translate-y-1/2 z-10">
+          <PropertyPanel node={node} showBackgroundColor={false} />
+        </div>
+      )}
+
+      {/* 调整大小手柄 */}
+      {isSelected && !isEditing && (
+        <div
+          className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors z-10"
+          onMouseDown={handleResizeStart}
+        />
+      )}
     </div>
   );
 }

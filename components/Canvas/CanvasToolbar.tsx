@@ -1,6 +1,7 @@
 'use client';
 
 import { useCanvasStore } from '@/lib/store';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 export default function CanvasToolbar() {
   const { addNode } = useCanvasStore();
@@ -56,37 +57,55 @@ export default function CanvasToolbar() {
   };
 
   return (
-    <div className="absolute top-6 right-6 flex flex-col gap-2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-2">
-      <button
-        onClick={handleAddTextNode}
-        className="px-4 py-2.5 bg-blue-500/90 text-white rounded-xl hover:bg-blue-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <span>文本</span>
-      </button>
+    <div className="absolute top-6 right-6">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <button className="w-12 h-12 bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 hover:bg-white/90 transition-all flex items-center justify-center group">
+            <svg className="w-6 h-6 text-gray-700 group-hover:text-gray-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </DropdownMenu.Trigger>
 
-      <button
-        onClick={handleAddSticky}
-        className="px-4 py-2.5 bg-yellow-400/90 text-gray-800 rounded-xl hover:bg-yellow-500 transition-all text-sm flex items-center gap-2 font-medium shadow-sm"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-        </svg>
-        <span>便签</span>
-      </button>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            className="min-w-[200px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 p-2 animate-in fade-in-0 zoom-in-95"
+            sideOffset={8}
+            align="end"
+          >
+            <DropdownMenu.Item
+              onClick={handleAddTextNode}
+              className="px-4 py-2.5 bg-blue-500/90 text-white rounded-xl hover:bg-blue-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm cursor-pointer outline-none mb-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>文本</span>
+            </DropdownMenu.Item>
 
-      <button
-        onClick={handleAddMindMap}
-        className="px-4 py-2.5 bg-indigo-500/90 text-white rounded-xl hover:bg-indigo-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-        </svg>
-        <span>思维导图</span>
-      </button>
+            <DropdownMenu.Item
+              onClick={handleAddSticky}
+              className="px-4 py-2.5 bg-yellow-400/90 text-gray-800 rounded-xl hover:bg-yellow-500 transition-all text-sm flex items-center gap-2 font-medium shadow-sm cursor-pointer outline-none mb-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+              <span>便签</span>
+            </DropdownMenu.Item>
+
+            <DropdownMenu.Item
+              onClick={handleAddMindMap}
+              className="px-4 py-2.5 bg-indigo-500/90 text-white rounded-xl hover:bg-indigo-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm cursor-pointer outline-none"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+              </svg>
+              <span>思维导图</span>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
     </div>
   );
 }
