@@ -3,10 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
 import AIToolbar from '../AI/AIToolbar';
+import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
-
-// 全局状态：是否显示 AI 工具栏
-let globalShowAIToolbar = false;
 
 interface TextNodeProps {
   node: CanvasNode;
@@ -21,6 +19,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showAIToolbar, setShowAIToolbar] = useState(false);
+  const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
@@ -64,8 +63,13 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
     if (!isSelected || isEditing) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Shift 键切换属性面板
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        setShowPropertyPanel(prev => !prev);
+      }
       // Tab 键切换 AI 工具栏
-      if (e.key === 'Tab') {
+      else if (e.key === 'Tab') {
         e.preventDefault();
         setShowAIToolbar(prev => !prev);
       }
@@ -80,10 +84,11 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isSelected, isEditing, node.id, deleteNode]);
 
-  // 失去选中时隐藏 AI 工具栏
+  // 失去选中时隐藏 AI 工具栏和属性面板
   useEffect(() => {
     if (!isSelected) {
       setShowAIToolbar(false);
+      setShowPropertyPanel(false);
     }
   }, [isSelected]);
 
@@ -181,6 +186,15 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
   // AI 生成的节点有特殊样式
   const isAIGenerated = node.type === 'ai-generated';
 
+  // 获取当前样式
+  const currentStyle = node.style || {};
+  const backgroundColor = currentStyle.backgroundColor || 'transparent';
+  const textStyle = {
+    fontSize: currentStyle.fontSize ? `${currentStyle.fontSize}px` : '14px',
+    fontWeight: currentStyle.fontWeight || 'normal',
+    color: currentStyle.textColor || '#1F2937',
+  };
+
   return (
     <div
       ref={nodeRef}
@@ -201,10 +215,13 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
     >
       <div
         className={`
-          bg-transparent p-4
-          ${isAIGenerated ? 'bg-gradient-to-br from-purple-50/50 to-pink-50/50 border border-purple-200/50 rounded-2xl backdrop-blur-sm' : ''}
+          p-4
+          ${isAIGenerated ? 'bg-gradient-to-br from-purple-50/50 to-pink-50/50 border border-purple-200/50 rounded-2xl backdrop-blur-sm' : 'rounded-lg'}
           transition-all
         `}
+        style={{
+          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : undefined,
+        }}
       >
         {/* AI 标记 */}
         {isAIGenerated && (
@@ -224,35 +241,45 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full min-h-[100px] resize-none border-none outline-none font-sans bg-transparent text-gray-800 text-sm leading-relaxed"
+            className="w-full min-h-[100px] resize-none border-none outline-none font-sans bg-transparent leading-relaxed"
             placeholder="输入内容... (Ctrl+Enter 保存, Esc 取消)"
+            style={textStyle}
           />
         ) : (
-          <div className="whitespace-pre-wrap break-words min-h-[100px] text-gray-800 text-sm leading-relaxed">
+          <div className="whitespace-pre-wrap break-words min-h-[100px] leading-relaxed" style={textStyle}>
             {node.content || <span className="text-gray-400">双击编辑...</span>}
           </div>
         )}
 
-        {/* Tab 提示和 AI 工具栏 */}
+        {/* 属性面板和AI工具栏 */}
         {isSelected && !isEditing && (
-          <div className="absolute -right-20 top-2">
-            {!showAIToolbar ? (
-              // Tab 提示
-              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
-                <span>AI</span>
+          <div className="absolute -right-[100px] top-2 flex flex-col gap-2 items-end z-10">
+            {/* 属性面板 */}
+            {showPropertyPanel && <PropertyPanel node={node} showBackgroundColor={false} />}
+
+            {/* 快捷键提示 */}
+            {!showAIToolbar && !showPropertyPanel ? (
+              <div className="flex flex-col gap-1">
+                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Shift</kbd>
+                  <span>属性</span>
+                </div>
+                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
+                  <span>AI</span>
+                </div>
               </div>
-            ) : (
-              // AI 工具栏 - 按键风格
+            ) : showAIToolbar ? (
+              // AI 工具栏
               <AIToolbar node={node} />
-            )}
+            ) : null}
           </div>
         )}
 
         {/* 调整大小手柄 */}
         {isSelected && !isEditing && (
           <div
-            className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors"
+            className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors z-0"
             onMouseDown={handleResizeStart}
           />
         )}

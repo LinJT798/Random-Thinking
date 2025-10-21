@@ -35,6 +35,14 @@ export interface MindMapMetadata {
   layoutType: LayoutType;  // 布局方向
 }
 
+// 节点样式
+export interface NodeStyle {
+  fontSize?: number;        // 字体大小 (px)
+  fontWeight?: 'normal' | 'bold'; // 字体粗细
+  textColor?: string;       // 文字颜色
+  backgroundColor?: string; // 背景颜色
+}
+
 // 节点数据结构
 export interface CanvasNode {
   id: string;
@@ -47,6 +55,7 @@ export interface CanvasNode {
   createdAt: number;
   updatedAt: number;
   color?: string; // 便签颜色
+  style?: NodeStyle; // 节点样式
   // 思维导图相关
   parentId?: string;      // 父节点ID
   childrenIds?: string[]; // 子节点ID列表

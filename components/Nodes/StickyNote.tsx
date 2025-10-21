@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
 import AIToolbar from '../AI/AIToolbar';
+import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
 
 interface StickyNoteProps {
@@ -26,6 +27,7 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showAIToolbar, setShowAIToolbar] = useState(false);
+  const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
@@ -70,8 +72,13 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     if (!isSelected || isEditing) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Shift 键切换属性面板
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        setShowPropertyPanel(prev => !prev);
+      }
       // Tab 键切换 AI 工具栏
-      if (e.key === 'Tab') {
+      else if (e.key === 'Tab') {
         e.preventDefault();
         setShowAIToolbar(prev => !prev);
       }
@@ -86,10 +93,11 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isSelected, isEditing, node.id, deleteNode]);
 
-  // 失去选中时隐藏 AI 工具栏
+  // 失去选中时隐藏 AI 工具栏和属性面板
   useEffect(() => {
     if (!isSelected) {
       setShowAIToolbar(false);
+      setShowPropertyPanel(false);
     }
   }, [isSelected]);
 
@@ -184,9 +192,12 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     };
   }, [isResizing, resizeStart, zoom, node.id, updateNode]);
 
-  // 改变颜色
-  const changeColor = (colorName: string) => {
-    updateNode(node.id, { color: colorName });
+  // 获取当前样式
+  const currentStyle = node.style || {};
+  const textStyle = {
+    fontSize: currentStyle.fontSize ? `${currentStyle.fontSize}px` : '14px',
+    fontWeight: currentStyle.fontWeight || 'normal',
+    color: currentStyle.textColor || '#000000',
   };
 
   return (
@@ -228,46 +239,46 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
             onKeyDown={handleKeyDown}
             className={`w-full h-full resize-none border-none outline-none ${currentColor.bg} font-handwriting`}
             placeholder="写下你的想法..."
-            style={{ background: 'transparent' }}
+            style={{
+              background: 'transparent',
+              ...textStyle
+            }}
           />
         ) : (
-          <div className="whitespace-pre-wrap break-words h-full font-handwriting">
+          <div className="whitespace-pre-wrap break-words h-full font-handwriting" style={textStyle}>
             {node.content || '双击编辑...'}
           </div>
         )}
 
-        {/* Tab 提示和工具栏 */}
+        {/* 属性面板和AI工具栏 */}
         {isSelected && !isEditing && (
-          <div className="absolute -right-2 top-2 flex flex-col gap-2 items-end">
-            {!showAIToolbar ? (
-              // Tab 提示
-              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
-                <span>AI</span>
-              </div>
-            ) : (
-              // AI 工具栏和颜色选择
-              <>
-                <AIToolbar node={node} />
-                <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex gap-1.5">
-                  {COLORS.map(color => (
-                    <button
-                      key={color.name}
-                      onClick={() => changeColor(color.name)}
-                      className={`w-5 h-5 rounded ${color.bg} ${color.border} border hover:scale-110 transition-transform shadow-sm`}
-                      title={color.name}
-                    />
-                  ))}
+          <div className="absolute -right-[100px] top-2 flex flex-col gap-2 items-end z-10">
+            {/* 属性面板 */}
+            {showPropertyPanel && <PropertyPanel node={node} />}
+
+            {/* 快捷键提示 */}
+            {!showAIToolbar && !showPropertyPanel ? (
+              <div className="flex flex-col gap-1">
+                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Shift</kbd>
+                  <span>属性</span>
                 </div>
-              </>
-            )}
+                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
+                  <span>AI</span>
+                </div>
+              </div>
+            ) : showAIToolbar ? (
+              // AI 工具栏
+              <AIToolbar node={node} />
+            ) : null}
           </div>
         )}
 
         {/* 调整大小手柄 */}
         {isSelected && !isEditing && (
           <div
-            className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors"
+            className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors z-0"
             onMouseDown={handleResizeStart}
           />
         )}

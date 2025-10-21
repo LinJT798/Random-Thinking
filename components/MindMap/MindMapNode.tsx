@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
 
 interface MindMapNodeProps {
@@ -16,6 +17,7 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
   const [content, setContent] = useState(node.content);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showPropertyPanel, setShowPropertyPanel] = useState(false);
 
   const { updateNode, deleteNode, addChildNode } = useCanvasStore();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -64,13 +66,25 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
     }
   };
 
+  // 选中状态变化时隐藏属性面板
+  useEffect(() => {
+    if (!isSelected) {
+      setShowPropertyPanel(false);
+    }
+  }, [isSelected]);
+
   // 全局键盘事件监听（选中时）
   useEffect(() => {
     if (!isSelected || isEditing) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Shift 键切换属性面板
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        setShowPropertyPanel(prev => !prev);
+      }
       // Enter - 开始编辑
-      if (e.key === 'Enter') {
+      else if (e.key === 'Enter') {
         e.preventDefault();
         setIsEditing(true);
       }
@@ -136,14 +150,20 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
     };
   }, [isDragging, dragOffset, zoom, node.id, updateNode]);
 
+  // 获取当前样式
+  const currentStyle = node.style || {};
+  const backgroundColor = currentStyle.backgroundColor || 'transparent';
+
   // 根据层级设置样式
   const getLevelStyle = () => {
-    const baseSize = Math.max(12, 16 - level * 2);
+    const baseSize = currentStyle.fontSize || Math.max(12, 16 - level * 2);
     const padding = Math.max(8, 16 - level * 2);
 
     return {
       fontSize: `${baseSize}px`,
       padding: `${padding}px ${padding * 1.5}px`,
+      fontWeight: currentStyle.fontWeight || 'normal',
+      color: currentStyle.textColor || '#1F2937',
     };
   };
 
@@ -165,11 +185,14 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
     >
       <div
         className={`
-          bg-white/90 backdrop-blur-sm border-2 rounded-lg shadow-md
+          backdrop-blur-sm border-2 rounded-lg shadow-md
           hover:shadow-lg transition-all
           ${level === 0 ? 'border-indigo-500 font-semibold' : `border-indigo-${Math.max(200, 400 - level * 100)}`}
         `}
-        style={getLevelStyle()}
+        style={{
+          ...getLevelStyle(),
+          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'rgba(255, 255, 255, 0.9)',
+        }}
       >
         {/* 内容 */}
         <div className="flex items-center gap-2">
@@ -180,17 +203,33 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
               onChange={(e) => setContent(e.target.value)}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              className="w-full resize-none border-none outline-none bg-transparent text-gray-800"
+              className="w-full resize-none border-none outline-none bg-transparent"
               placeholder="输入内容..."
               rows={1}
             />
           ) : (
-            <div className="w-full whitespace-pre-wrap break-words text-gray-800">
+            <div className="w-full whitespace-pre-wrap break-words">
               {node.content || <span className="text-gray-400">双击编辑...</span>}
             </div>
           )}
         </div>
       </div>
+
+      {/* 属性面板和快捷键提示 */}
+      {isSelected && !isEditing && (
+        <div className="absolute -right-[100px] top-2 flex flex-col gap-2 items-end z-10">
+          {/* 属性面板 */}
+          {showPropertyPanel && <PropertyPanel node={node} />}
+
+          {/* 快捷键提示 */}
+          {!showPropertyPanel && (
+            <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+              <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Shift</kbd>
+              <span>属性</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 层级指示器 */}
       {level > 0 && (
