@@ -34,6 +34,27 @@ export default function CanvasToolbar() {
     });
   };
 
+  // 添加思维导图
+  const handleAddMindMap = async () => {
+    const x = Math.random() * 500 + 100;
+    const y = Math.random() * 500 + 100;
+
+    await addNode({
+      type: 'mindmap',
+      content: '中心主题',
+      position: { x, y },
+      size: { width: 180, height: 80 },
+      connections: [],
+      childrenIds: [],
+      mindMapMetadata: {
+        level: 0,
+        collapsed: false,
+        order: 0,
+        layoutType: 'horizontal',
+      },
+    });
+  };
+
   return (
     <div className="absolute top-6 right-6 flex flex-col gap-2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-2">
       <button
@@ -54,6 +75,17 @@ export default function CanvasToolbar() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
         </svg>
         <span>便签</span>
+      </button>
+
+      <button
+        onClick={handleAddMindMap}
+        className="px-4 py-2.5 bg-indigo-500/90 text-white rounded-xl hover:bg-indigo-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+        </svg>
+        <span>思维导图</span>
       </button>
     </div>
   );

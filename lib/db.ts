@@ -1,11 +1,12 @@
 import Dexie, { Table } from 'dexie';
-import type { CanvasData, CanvasNode } from '@/types';
+import type { CanvasData, CanvasNode, ChatMessage } from '@/types';
 
 // 扩展 Dexie 数据库类
 export class CanvasDatabase extends Dexie {
   // 声明表
   canvases!: Table<CanvasData>;
   nodes!: Table<CanvasNode>;
+  chatMessages!: Table<ChatMessage>;
 
   constructor() {
     super('InfiniteCanvasDB');
@@ -14,6 +15,13 @@ export class CanvasDatabase extends Dexie {
     this.version(1).stores({
       canvases: 'id, name, createdAt, updatedAt',
       nodes: 'id, type, createdAt, updatedAt, [aiMetadata.source]'
+    });
+
+    // 升级到版本 2，添加聊天消息表
+    this.version(2).stores({
+      canvases: 'id, name, createdAt, updatedAt',
+      nodes: 'id, type, createdAt, updatedAt, [aiMetadata.source]',
+      chatMessages: 'id, canvasId, timestamp'
     });
   }
 
@@ -104,6 +112,39 @@ export class CanvasDatabase extends Dexie {
       await this.nodes.bulkDelete(nodeIds);
     }
     await this.canvases.delete(id);
+  }
+
+  // 添加聊天消息
+  async addChatMessage(canvasId: string, role: 'user' | 'assistant', content: string): Promise<string> {
+    const message: ChatMessage = {
+      id: crypto.randomUUID(),
+      canvasId,
+      role,
+      content,
+      timestamp: Date.now()
+    };
+
+    await this.chatMessages.add(message);
+    return message.id;
+  }
+
+  // 获取画布的聊天历史
+  async getChatHistory(canvasId: string): Promise<ChatMessage[]> {
+    return await this.chatMessages
+      .where('canvasId')
+      .equals(canvasId)
+      .sortBy('timestamp');
+  }
+
+  // 清空画布的聊天历史
+  async clearChatHistory(canvasId: string): Promise<void> {
+    const messages = await this.chatMessages
+      .where('canvasId')
+      .equals(canvasId)
+      .toArray();
+
+    const messageIds = messages.map(m => m.id);
+    await this.chatMessages.bulkDelete(messageIds);
   }
 }
 

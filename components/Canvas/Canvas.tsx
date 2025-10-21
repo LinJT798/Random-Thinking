@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useCanvasStore } from '@/lib/store';
 import TextNode from '../Nodes/TextNode';
 import StickyNote from '../Nodes/StickyNote';
+import MindMapNode from '../MindMap/MindMapNode';
+import MindMapConnection from '../MindMap/MindMapConnection';
+import ChatButton from '../Chat/ChatButton';
+import ChatWindow from '../Chat/ChatWindow';
+import HelpButton from './HelpButton';
 import type { CanvasNode, Position } from '@/types';
 
 interface CanvasProps {
@@ -17,7 +22,7 @@ export default function Canvas({ canvasId }: CanvasProps) {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<Position>({ x: 0, y: 0 });
 
-  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo } = useCanvasStore();
+  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, isChatOpen } = useCanvasStore();
 
   // 加载画布数据
   useEffect(() => {
@@ -126,11 +131,37 @@ export default function Canvas({ canvasId }: CanvasProps) {
     switch (node.type) {
       case 'sticky':
         return <StickyNote key={node.id} {...commonProps} />;
+      case 'mindmap':
+        return <MindMapNode key={node.id} {...commonProps} />;
       case 'text':
       case 'ai-generated':
       default:
         return <TextNode key={node.id} {...commonProps} />;
     }
+  };
+
+  // 渲染思维导图连线
+  const renderMindMapConnections = () => {
+    const connections: JSX.Element[] = [];
+
+    nodes.forEach(node => {
+      if (node.parentId) {
+        const parentNode = nodes.find(n => n.id === node.parentId);
+        if (parentNode) {
+          connections.push(
+            <MindMapConnection
+              key={`conn-${parentNode.id}-${node.id}`}
+              parentNode={parentNode}
+              childNode={node}
+              viewportOffset={viewportOffset}
+              zoom={zoom}
+            />
+          );
+        }
+      }
+    });
+
+    return connections;
   };
 
   return (
@@ -166,6 +197,21 @@ export default function Canvas({ canvasId }: CanvasProps) {
           transformOrigin: '0 0',
         }}
       >
+        {/* 思维导图连线层 (SVG) */}
+        <svg
+          className="absolute pointer-events-none"
+          style={{
+            left: 0,
+            top: 0,
+            width: '10000px',
+            height: '10000px',
+            overflow: 'visible',
+          }}
+        >
+          {renderMindMapConnections()}
+        </svg>
+
+        {/* 节点层 */}
         {nodes.map(renderNode)}
       </div>
 
@@ -207,21 +253,14 @@ export default function Canvas({ canvasId }: CanvasProps) {
         </button>
       </div>
 
-      {/* 提示信息 */}
-      <div className="absolute top-6 left-6 bg-white/70 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 px-4 py-3 text-xs text-gray-600 space-y-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400">⌘</span>
-          <span className="font-medium">双击画布创建文本</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400">⇧</span>
-          <span>Shift + 拖动平移</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400">⌃</span>
-          <span>Ctrl + 滚轮缩放</span>
-        </div>
+      {/* 左上角按钮组 */}
+      <div className="absolute top-6 left-6 flex items-center gap-2">
+        <ChatButton />
+        <HelpButton />
       </div>
+
+      {/* 聊天窗口 */}
+      {isChatOpen && <ChatWindow />}
     </div>
   );
 }
