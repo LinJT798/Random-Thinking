@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import { useTextSelection } from '@/hooks/useTextSelection';
+import AddToButton from '../AddToButton';
 import AIToolbar from '../AI/AIToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
@@ -23,12 +25,15 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode, addNode, chatSessions } = useCanvasStore();
+  const { updateNode, deleteNode, chatSessions } = useCanvasStore();
 
   // 检查是否有打开的聊天窗口
   const hasOpenChats = chatSessions.some(s => s.isOpen);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
+
+  // 文本选中功能
+  const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
 
   // 同步node.content到本地state
   useEffect(() => {
@@ -82,7 +87,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
         setShowPropertyPanel(prev => !prev);
       }
       // Tab 键切换 AI 工具栏
-      else if (e.key === 'Tab') {
+      else if (e.key === 'Tab' && hasOpenChats) {
         e.preventDefault();
         setShowAIToolbar(prev => !prev);
       }
@@ -95,7 +100,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isSelected, isEditing, node.id, deleteNode]);
+  }, [isSelected, isEditing, node.id, deleteNode, hasOpenChats]);
 
   // 失去选中时隐藏 AI 工具栏和属性面板
   useEffect(() => {
@@ -199,20 +204,6 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
   // AI 生成的节点有特殊样式
   const isAIGenerated = node.type === 'ai-generated';
 
-  // 添加新节点
-  const handleAddNewNode = async () => {
-    const newX = node.position.x + node.size.width + 50; // 在右侧50px处
-    const newY = node.position.y;
-
-    await addNode({
-      type: 'text',
-      content: '',
-      position: { x: newX, y: newY },
-      size: { width: 300, height: 150 },
-      connections: [],
-    });
-  };
-
   // 获取当前样式
   const currentStyle = node.style || {};
   const backgroundColor = currentStyle.backgroundColor || 'transparent';
@@ -268,12 +259,16 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
+            onMouseUp={handleTextSelection}
             className="w-full h-full resize-none border-none outline-none font-sans bg-transparent leading-relaxed"
             placeholder="输入内容... (Ctrl+Enter 保存, Esc 取消)"
             style={textStyle}
           />
         ) : (
-          <div className="whitespace-pre-wrap break-words h-full leading-relaxed overflow-hidden" style={textStyle}>
+          <div
+            className="whitespace-pre-wrap break-words h-full leading-relaxed overflow-hidden"
+            style={textStyle}
+          >
             {node.content || <span className="text-gray-400">双击编辑...</span>}
           </div>
         )}
@@ -317,6 +312,15 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
           />
         )}
       </div>
+
+      {/* Add to 按钮 */}
+      {selectedText && selectionPosition && (
+        <AddToButton
+          selectedText={selectedText}
+          position={selectionPosition}
+          onClick={handleAddToClick}
+        />
+      )}
     </div>
   );
 }

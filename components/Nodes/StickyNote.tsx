@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import { useTextSelection } from '@/hooks/useTextSelection';
+import AddToButton from '../AddToButton';
 import AIToolbar from '../AI/AIToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
@@ -31,15 +33,15 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode, addNode, chatSessions } = useCanvasStore();
+  const { updateNode, deleteNode, chatSessions } = useCanvasStore();
 
   // 检查是否有打开的聊天窗口
   const hasOpenChats = chatSessions.some(s => s.isOpen);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
-  // 获取当前颜色
-  const currentColor = COLORS.find(c => c.name === node.color) || COLORS[0];
+  // 文本选中功能
+  const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
 
   // 同步node.content到本地state
   useEffect(() => {
@@ -205,21 +207,6 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     };
   }, [isResizing, resizeStart, zoom, node.id, updateNode]);
 
-  // 添加新节点
-  const handleAddNewNode = async () => {
-    const newX = node.position.x + (node.size.width || 200) + 50; // 在右侧50px处
-    const newY = node.position.y;
-
-    await addNode({
-      type: 'sticky',
-      content: '',
-      position: { x: newX, y: newY },
-      size: { width: 200, height: 200 },
-      connections: [],
-      color: node.color, // 使用相同颜色
-    });
-  };
-
   // 获取当前样式
   const currentStyle = node.style || {};
   const textStyle = {
@@ -258,12 +245,16 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
           onChange={(e) => setContent(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          onMouseUp={handleTextSelection}
           className="w-full h-full resize-none border-none outline-none bg-transparent font-handwriting"
           placeholder="写下你的想法..."
           style={textStyle}
         />
       ) : (
-        <div className="whitespace-pre-wrap break-words h-full font-handwriting" style={textStyle}>
+        <div
+          className="whitespace-pre-wrap break-words h-full font-handwriting"
+          style={textStyle}
+        >
           {node.content || '双击编辑...'}
         </div>
       )}
@@ -304,6 +295,15 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         <div
           className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors z-10"
           onMouseDown={handleResizeStart}
+        />
+      )}
+
+      {/* Add to 按钮 */}
+      {selectedText && selectionPosition && (
+        <AddToButton
+          selectedText={selectedText}
+          position={selectionPosition}
+          onClick={handleAddToClick}
         />
       )}
     </div>

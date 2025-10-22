@@ -1,4 +1,4 @@
-import type { AIRequest, AIResponse } from '@/types';
+import type { AIRequest, AIResponse, CanvasNode } from '@/types';
 
 // 客户端 AI 功能封装
 
@@ -82,7 +82,7 @@ export function shouldSuggestSummary(content: string): boolean {
 /**
  * 检查是否有很多未连接的节点（>10个）
  */
-export function shouldSuggestOrganize(nodes: any[]): boolean {
+export function shouldSuggestOrganize(nodes: CanvasNode[]): boolean {
   const unconnectedNodes = nodes.filter(node =>
     !node.connections || node.connections.length === 0
   );
@@ -105,8 +105,8 @@ export function calculateDistance(
  * 检查两个节点是否应该建议连接（距离很近但未连接）
  */
 export function shouldSuggestConnection(
-  node1: any,
-  node2: any,
+  node1: CanvasNode,
+  node2: CanvasNode,
   threshold: number = 200
 ): boolean {
   // 如果已经连接，返回false

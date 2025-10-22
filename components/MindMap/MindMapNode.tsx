@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import { useTextSelection } from '@/hooks/useTextSelection';
+import AddToButton from '../AddToButton';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
 
@@ -24,6 +26,9 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
   const nodeRef = useRef<HTMLDivElement>(null);
 
   const level = node.mindMapMetadata?.level || 0;
+
+  // 文本选中功能
+  const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
 
   // 同步node.content到本地state
   useEffect(() => {
@@ -186,7 +191,7 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
         className={`
           backdrop-blur-sm border-2 rounded-lg shadow-md
           hover:shadow-lg transition-all
-          ${level === 0 ? 'border-indigo-500 font-semibold' : `border-indigo-${Math.max(200, 400 - level * 100)}`}
+          ${level === 0 ? 'border-sky-400 font-semibold' : level === 1 ? 'border-sky-300' : 'border-sky-200'}
         `}
         style={{
           ...getLevelStyle(),
@@ -202,12 +207,15 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
               onChange={(e) => setContent(e.target.value)}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
+              onMouseUp={handleTextSelection}
               className="w-full resize-none border-none outline-none bg-transparent"
               placeholder="输入内容..."
               rows={1}
             />
           ) : (
-            <div className="w-full whitespace-pre-wrap break-words">
+            <div
+              className="w-full whitespace-pre-wrap break-words"
+            >
               {node.content || <span className="text-gray-400">双击编辑...</span>}
             </div>
           )}
@@ -231,7 +239,7 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
               e.stopPropagation();
               addChildNode(node.id, '新节点');
             }}
-            className="w-6 h-6 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            className="w-6 h-6 bg-sky-400 hover:bg-sky-500 text-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
             title="添加子节点"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,6 +254,15 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
         <div className="absolute -right-[170px] top-1/2 -translate-y-1/2 z-10">
           <PropertyPanel node={node} />
         </div>
+      )}
+
+      {/* Add to 按钮 */}
+      {selectedText && selectionPosition && (
+        <AddToButton
+          selectedText={selectedText}
+          position={selectionPosition}
+          onClick={handleAddToClick}
+        />
       )}
 
     </div>

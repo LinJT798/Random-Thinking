@@ -22,7 +22,7 @@ export default function Canvas({ canvasId }: CanvasProps) {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<Position>({ x: 0, y: 0 });
 
-  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, chatSessions } = useCanvasStore();
+  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, chatSessions, draggingText, setDraggingText } = useCanvasStore();
 
   // 加载画布数据
   useEffect(() => {
@@ -69,12 +69,31 @@ export default function Canvas({ canvasId }: CanvasProps) {
     return () => window.removeEventListener('focusNode', handleFocusNode as EventListener);
   }, [zoom]);
 
-  // 处理画布点击（取消选择）
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+  // 处理画布点击（取消选择或创建拖拽的文本节点）
+  const handleCanvasClick = useCallback(async (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      clearSelection();
+      // 如果有拖拽的文本，创建新节点
+      if (draggingText) {
+        // 计算在画布坐标系中的位置
+        const x = (e.clientX - viewportOffset.x) / zoom;
+        const y = (e.clientY - viewportOffset.y) / zoom;
+
+        await addNode({
+          type: 'text',
+          content: draggingText,
+          position: { x, y },
+          size: { width: 300, height: 150 },
+          connections: [],
+        });
+
+        // 清除拖拽文本
+        setDraggingText(null);
+      } else {
+        // 没有拖拽文本，只是取消选择
+        clearSelection();
+      }
     }
-  }, [clearSelection]);
+  }, [clearSelection, draggingText, setDraggingText, viewportOffset, zoom, addNode]);
 
   // 处理双击画布（创建文本节点）
   const handleCanvasDoubleClick = useCallback(async (e: React.MouseEvent) => {
@@ -158,7 +177,7 @@ export default function Canvas({ canvasId }: CanvasProps) {
 
   // 渲染思维导图连线
   const renderMindMapConnections = () => {
-    const connections: JSX.Element[] = [];
+    const connections: React.ReactElement[] = [];
 
     nodes.forEach(node => {
       if (node.parentId) {

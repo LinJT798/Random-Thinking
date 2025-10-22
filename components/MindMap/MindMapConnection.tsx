@@ -45,7 +45,7 @@ export default function MindMapConnection({
   return (
     <path
       d={path}
-      stroke="#6366f1"
+      stroke="#38bdf8"
       strokeWidth={strokeWidth}
       opacity={opacity}
       fill="none"

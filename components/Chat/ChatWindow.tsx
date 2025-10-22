@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import { useTextSelection } from '@/hooks/useTextSelection';
+import AddToButton from '../AddToButton';
 import { detectNodeChanges } from '@/lib/context-builder';
 
 interface ChatWindowProps {
@@ -30,6 +32,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const [titleInput, setTitleInput] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
+  // 文本选中功能
+  const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
+
   const {
     chatSessions,
     closeChatSession,
@@ -42,6 +47,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     nodes,
     removeChatReference,
     clearChatReferences,
+    draggingText,
+    setDraggingText,
+    addChatReference,
   } = useCanvasStore();
 
   // Get the specific chat session
@@ -64,7 +72,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   // 处理发送消息
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !session) return;
 
     const userMessage = input.trim();
 
@@ -108,8 +116,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           initialNodes: nodes,
           nodeChanges,
           chatHistory: currentChatMessages.slice(0, -1), // 不包括刚添加的用户消息
-          useThinking: session.useThinking, // 是否启用 Extended Thinking
-          useWebSearch: session.useWebSearch, // 是否启用 Web Search
         }),
       });
 
@@ -188,6 +194,23 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  // 处理输入区域点击（添加拖拽的文本作为引用）
+  const handleInputAreaClick = (e: React.MouseEvent) => {
+    if (draggingText) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 添加为引用
+      addChatReference(chatId, 'dragged-text', draggingText);
+
+      // 清除拖拽文本
+      setDraggingText(null);
+
+      // 聚焦输入框
+      inputRef.current?.focus();
     }
   };
 
@@ -384,19 +407,29 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   }
 
   return (
-    <div
-      ref={windowRef}
-      className="fixed bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 flex flex-col overflow-hidden"
-      style={{
-        left: `${session.position.x}px`,
-        top: `${session.position.y}px`,
-        width: `${session.size.width}px`,
-        height: `${session.size.height}px`,
-        cursor: isDragging ? 'grabbing' : 'default',
-        zIndex: 1000,
-      }}
-      onWheel={(e) => e.stopPropagation()}
-    >
+    <>
+      {/* Add to 按钮 */}
+      {selectedText && selectionPosition && (
+        <AddToButton
+          selectedText={selectedText}
+          position={selectionPosition}
+          onClick={handleAddToClick}
+        />
+      )}
+
+      <div
+        ref={windowRef}
+        className="fixed bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 flex flex-col overflow-hidden"
+        style={{
+          left: `${session.position.x}px`,
+          top: `${session.position.y}px`,
+          width: `${session.size.width}px`,
+          height: `${session.size.height}px`,
+          cursor: isDragging ? 'grabbing' : 'default',
+          zIndex: 1000,
+        }}
+        onWheel={(e) => e.stopPropagation()}
+      >
       {/* 标题栏 */}
       <div
         className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-white/50 cursor-grab active:cursor-grabbing"
@@ -490,11 +523,12 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
               {/* 消息气泡 */}
               <div
-                className={`rounded-2xl px-4 py-2 ${
+                className={`rounded-2xl px-4 py-2 relative ${
                   msg.role === 'user'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-900'
+                    : 'bg-gray-100 text-gray-900 select-text cursor-text'
                 }`}
+                onMouseUp={(e) => msg.role === 'assistant' && handleTextSelection(e)}
               >
                 <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
               </div>
@@ -544,7 +578,10 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       </div>
 
       {/* 输入区域 */}
-      <div className="border-t border-gray-200/50 p-4 bg-white/50 chat-input">
+      <div
+        className="border-t border-gray-200/50 p-4 bg-white/50 chat-input"
+        onClick={handleInputAreaClick}
+      >
         {/* 引用内容显示 */}
         {session.references.length > 0 && (
           <div className="mb-3 space-y-2">
@@ -579,9 +616,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className={`flex-1 resize-none rounded-xl border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 bg-white ${
+              draggingText
+                ? 'border-blue-400 ring-2 ring-blue-200'
+                : 'border-gray-200 focus:ring-blue-500'
+            }`}
             rows={2}
             disabled={isLoading}
+            placeholder={draggingText ? '点击添加为引用...' : ''}
           />
           <button
             onClick={handleSend}
@@ -612,6 +654,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           <path d="M8 10V5H7v4H3v1h4a1 1 0 001-1z"/>
         </svg>
       </div>
-    </div>
+
+      </div>
+    </>
   );
 }

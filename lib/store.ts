@@ -52,6 +52,10 @@ interface CanvasStore {
   currentChatId: string | null;
   chatListExpanded: boolean; // 聊天列表是否展开
 
+  // 拖拽文本状态
+  draggingText: string | null;
+  setDraggingText: (text: string | null) => void;
+
   // 聊天方法
   createChatSession: () => string;
   openChatSession: (chatId: string) => void;
@@ -88,6 +92,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   chatSessions: [],
   currentChatId: null,
   chatListExpanded: false,
+
+  // 拖拽文本初始状态
+  draggingText: null,
 
   setCurrentCanvas: (canvas) => set({ currentCanvas: canvas, currentCanvasId: canvas.id }),
 
@@ -624,5 +631,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ),
     });
   },
+
+  // 设置拖拽文本
+  setDraggingText: (text) => set({ draggingText: text }),
 
 }));

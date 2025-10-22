@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Canvas from '@/components/Canvas/Canvas';
 import CanvasToolbar from '@/components/Canvas/CanvasToolbar';
+import DraggingTextBubble from '@/components/DraggingTextBubble';
 import { initDatabase } from '@/lib/db';
 import { useCanvasStore } from '@/lib/store';
 
@@ -44,6 +45,7 @@ export default function Home() {
     <main className="relative w-full h-screen overflow-hidden">
       <Canvas canvasId={canvasId} />
       <CanvasToolbar />
+      <DraggingTextBubble />
     </main>
   );
 }
