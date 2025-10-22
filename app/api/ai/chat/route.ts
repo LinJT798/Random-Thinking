@@ -109,12 +109,14 @@ export async function POST(request: NextRequest) {
       content: userMessage
     });
 
-    // 构建 API 请求体
+    // 构建 API 请求体（OpenAI 兼容格式）
     const requestBody: Record<string, unknown> = {
       model: 'claude-sonnet-4-5-20250929', // Sonnet 4.5
       max_tokens: 4096,
-      system: systemPrompt, // System prompt 作为独立参数
-      messages: contextMessages, // 只包含 user 和 assistant 消息
+      messages: [
+        { role: 'system', content: systemPrompt }, // System prompt 作为第一条消息
+        ...contextMessages
+      ],
       stream: true, // 启用流式响应
     };
 
@@ -138,7 +140,7 @@ export async function POST(request: NextRequest) {
         } else {
           errorData = { message: await apiResponse.text() };
         }
-      } catch (e) {
+      } catch {
         errorData = { message: 'Failed to parse error response' };
       }
 
@@ -209,7 +211,7 @@ export async function POST(request: NextRequest) {
                     const textContent = event.choices[0].delta.content;
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: textContent })}\n\n`));
                   }
-                } catch (e) {
+                } catch {
                   // 忽略解析错误
                 }
               }
