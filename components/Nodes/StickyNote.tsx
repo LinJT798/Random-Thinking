@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import AddToButton from '../AddToButton';
-import AIToolbar from '../AI/AIToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
 
@@ -28,15 +27,12 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const [content, setContent] = useState(node.content);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [showAIToolbar, setShowAIToolbar] = useState(false);
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode, chatSessions } = useCanvasStore();
+  const { updateNode, deleteNode } = useCanvasStore();
 
-  // 检查是否有打开的聊天窗口
-  const hasOpenChats = chatSessions.some(s => s.isOpen);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -92,11 +88,6 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         e.preventDefault();
         setShowPropertyPanel(prev => !prev);
       }
-      // Tab 键切换 AI 工具栏
-      else if (e.key === 'Tab') {
-        e.preventDefault();
-        setShowAIToolbar(prev => !prev);
-      }
       // Delete 或 Backspace 键删除节点
       else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
@@ -108,10 +99,9 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isSelected, isEditing, node.id, deleteNode]);
 
-  // 失去选中时隐藏 AI 工具栏和属性面板
+  // 失去选中时隐藏属性面板
   useEffect(() => {
     if (!isSelected) {
-      setShowAIToolbar(false);
       setShowPropertyPanel(false);
     }
   }, [isSelected]);
@@ -263,23 +253,12 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
       {isSelected && !isEditing && (
         <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
           {/* 快捷键提示 */}
-          {!showPropertyPanel && !showAIToolbar && (
-            <>
-              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
-                <span>属性</span>
-              </div>
-              {hasOpenChats && (
-                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
-                  <span>AI</span>
-                </div>
-              )}
-            </>
+          {!showPropertyPanel && (
+            <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+              <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
+              <span>属性</span>
+            </div>
           )}
-
-          {/* AI 工具栏 */}
-          {showAIToolbar && <AIToolbar node={node} />}
         </div>
       )}
 

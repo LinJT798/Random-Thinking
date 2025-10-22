@@ -32,9 +32,7 @@ export async function POST(request: NextRequest) {
     // 构建系统 prompt
     const systemPrompt = `你是一位深思熟虑的思考者，擅长阅读与理解复杂内容。
 你会仔细分析用户提供的上下文，并基于这些内容展开有深度的思考与讨论。
-
 你关注逻辑、背景、推理、假设和可能的多种视角，而不是仅仅给出表面答案。
-你擅长提出启发性的问题，帮助用户更清晰地表达、推演或验证自己的想法。
 
 当用户提问或讨论时：
 
@@ -54,9 +52,9 @@ export async function POST(request: NextRequest) {
 
 使用清晰的逻辑结构（例如“首先…其次…最后…”）。
 
-当合适时，可以提出反思性或发人深省的问题，引导进一步讨论。
+避免空洞的赞美或模糊的表述。不要滥用各种符号，尽量使用简练的文本表达；
 
-避免空洞的赞美或模糊的表述。用中文回复。`;
+使用简洁、有力的回复，切忌过于冗长，用中文回复。`;
 
     // 构建上下文消息
     const contextMessages: Array<{ role: string; content: string }> = [];
@@ -109,18 +107,27 @@ export async function POST(request: NextRequest) {
       content: userMessage
     });
 
-    // 构建 API 请求体（OpenAI 兼容格式）
-    const requestBody: Record<string, unknown> = {
-      model: 'claude-sonnet-4-5-20250929', // Sonnet 4.5
+    // 构建 API 请求体（Anthropic 原生格式）
+    // System prompt 作为 messages 数组的第一条消息
+    const requestBody = {
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
       messages: [
-        { role: 'system', content: systemPrompt }, // System prompt 作为第一条消息
+        { role: 'system', content: systemPrompt },
         ...contextMessages
       ],
-      stream: true, // 启用流式响应
+      stream: true,
     };
 
-    // 调用 Claude API
+    // 调试日志
+    console.log('=== API Request Debug ===');
+    console.log('Model:', requestBody.model);
+    console.log('Messages count:', requestBody.messages.length);
+    console.log('First message role:', requestBody.messages[0].role);
+    console.log('=========================');
+
+    // 调用 Claude API（OpenAI 兼容格式）
+    // 注意：虽然使用 OpenAI 格式端点，但 system prompt 仍然放在 messages 数组第一位
     const apiResponse = await fetch('https://lumos.diandian.info/winky/claude/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -140,7 +147,7 @@ export async function POST(request: NextRequest) {
         } else {
           errorData = { message: await apiResponse.text() };
         }
-      } catch {
+      } catch (e) {
         errorData = { message: 'Failed to parse error response' };
       }
 
@@ -180,7 +187,7 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            // 解析 SSE 格式的数据（Anthropic 原生格式）
+            // 解析 SSE 格式的数据（OpenAI 兼容格式）
             const chunk = decoder.decode(value);
             const lines = chunk.split('\n');
 
@@ -194,24 +201,15 @@ export async function POST(request: NextRequest) {
                 try {
                   const event = JSON.parse(data);
 
-                  // 支持两种格式：
-                  // 1. Anthropic 原生格式: { type: 'content_block_delta', delta: { type: 'text_delta', text: '...' } }
-                  // 2. OpenAI 格式: { choices: [{ delta: { content: '...' } }] }
-
-                  if (event.type === 'content_block_delta') {
-                    // Anthropic 原生格式
-                    if (event.delta?.type === 'text_delta') {
-                      const textContent = event.delta.text;
-                      if (textContent) {
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: textContent })}\n\n`));
-                      }
+                  // OpenAI 兼容格式的流式事件
+                  // 格式: { choices: [{ delta: { content: "..." } }] }
+                  if (event.choices && event.choices.length > 0) {
+                    const delta = event.choices[0].delta;
+                    if (delta && delta.content) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: delta.content })}\n\n`));
                     }
-                  } else if (event.choices && event.choices[0]?.delta?.content) {
-                    // OpenAI 格式
-                    const textContent = event.choices[0].delta.content;
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: textContent })}\n\n`));
                   }
-                } catch {
+                } catch (e) {
                   // 忽略解析错误
                 }
               }
