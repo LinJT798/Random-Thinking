@@ -31,7 +31,10 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode, addNode } = useCanvasStore();
+  const { updateNode, deleteNode, addNode, chatSessions } = useCanvasStore();
+
+  // 检查是否有打开的聊天窗口
+  const hasOpenChats = chatSessions.some(s => s.isOpen);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -275,10 +278,12 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
                 <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
                 <span>属性</span>
               </div>
-              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
-                <span>AI</span>
-              </div>
+              {hasOpenChats && (
+                <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
+                  <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Tab</kbd>
+                  <span>AI</span>
+                </div>
+              )}
             </>
           )}
 

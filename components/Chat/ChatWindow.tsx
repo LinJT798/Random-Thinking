@@ -34,7 +34,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     chatSessions,
     closeChatSession,
     addChatMessage,
-    clearChatHistory,
+    deleteChatSession,
     setChatWindowPosition,
     setChatWindowSize,
     updateChatName,
@@ -108,11 +108,24 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           initialNodes: nodes,
           nodeChanges,
           chatHistory: currentChatMessages.slice(0, -1), // 不包括刚添加的用户消息
+          useThinking: session.useThinking, // 是否启用 Extended Thinking
+          useWebSearch: session.useWebSearch, // 是否启用 Web Search
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from AI');
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: await response.text() };
+        }
+        console.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(`Failed to get response from AI: ${response.status} ${response.statusText}\n${JSON.stringify(errorData, null, 2)}`);
       }
 
       // 处理流式响应
@@ -133,7 +146,15 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
               const data = line.slice(6);
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.content) {
+
+                // 处理普通文本内容
+                if (parsed.type === 'text' && parsed.content) {
+                  fullMessage += parsed.content;
+                  setStreamingMessage(fullMessage);
+                }
+
+                // 向后兼容：如果没有 type 字段，默认当作文本
+                if (!parsed.type && parsed.content) {
                   fullMessage += parsed.content;
                   setStreamingMessage(fullMessage);
                 }
@@ -410,9 +431,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => clearChatHistory(chatId)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
-            title="清空对话"
+            onClick={() => deleteChatSession(chatId)}
+            className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-gray-500"
+            title="删除对话"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -510,6 +531,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           </div>
         )}
 
+        {/* AI 回复文本显示 */}
         {streamingMessage && (
           <div className="flex justify-start">
             <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gray-100 text-gray-900">

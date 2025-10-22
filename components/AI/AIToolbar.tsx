@@ -115,54 +115,6 @@ export default function AIToolbar({ node }: AIToolbarProps) {
       className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex flex-col gap-1.5 animate-in fade-in-0 zoom-in-95 duration-200"
       style={{ transformOrigin: 'top left' }}
     >
-      <button
-        onClick={handleExpand}
-        disabled={isProcessing}
-        className="bg-purple-500/20 hover:bg-purple-500/30 text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium transition-all border border-purple-400/30"
-        title="AI 扩写这段内容"
-      >
-        {isProcessing ? (
-          <>
-            <svg className="animate-spin h-2.5 w-2.5" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>处理中</span>
-          </>
-        ) : (
-          <>
-            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>扩写</span>
-          </>
-        )}
-      </button>
-
-      <button
-        onClick={handleSummarize}
-        disabled={isProcessing}
-        className="bg-blue-500/20 hover:bg-blue-500/30 text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium transition-all border border-blue-400/30"
-        title="AI 总结这段内容"
-      >
-        {isProcessing ? (
-          <>
-            <svg className="animate-spin h-2.5 w-2.5" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>处理中</span>
-          </>
-        ) : (
-          <>
-            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-            <span>总结</span>
-          </>
-        )}
-      </button>
-
       {hasOpenChats && (
         <button
           onClick={handleAddTo}

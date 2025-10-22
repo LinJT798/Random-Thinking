@@ -624,4 +624,5 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       ),
     });
   },
+
 }));

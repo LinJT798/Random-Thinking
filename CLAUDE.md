@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Styling**: Tailwind CSS 4
 - **State Management**: Zustand
 - **Local Storage**: Dexie.js (IndexedDB wrapper)
-- **AI**: Custom Claude API proxy (OpenAI-compatible format)
+- **AI**: Anthropic Claude API (via proxy with native format support)
 - **UI Components**: Radix UI, cmdk, tldraw
 
 ## Development Commands
@@ -46,7 +46,7 @@ Required environment variable in `.env.local`:
 ANTHROPIC_API_KEY=your_api_key_here
 ```
 
-**Important**: This project uses a custom Claude API proxy at `https://lumos.diandian.info/winky/claude` with OpenAI-compatible format. Contact the administrator for API keys.
+**Important**: This project uses a custom Claude API proxy at `https://lumos.diandian.info/winky/claude` with Anthropic native format support. The `/messages` endpoint supports Extended Thinking and native streaming format. Contact the administrator for API keys.
 
 ## Architecture
 
@@ -93,7 +93,8 @@ AI features use a client-server pattern:
   - `claude-3-5-haiku-20241022` - Fast, cost-effective model for expand/summarize operations
   - `claude-sonnet-4-5-20250929` - More powerful model for chat conversations with streaming support
 - **Prompts**: Chinese language prompts optimized for brief content expansion
-- **Format**: OpenAI-compatible format with `v1/chat/completions` endpoint
+- **Format**: Anthropic native format with streaming support
+- **Endpoint**: `https://lumos.diandian.info/winky/claude/messages`
 
 #### API Endpoints
 
@@ -118,7 +119,11 @@ POST /api/ai/chat
 }
 ```
 
-**Streaming Response**: Server-sent events (SSE) format with `data:` prefixed JSON chunks, ending with `data: [DONE]`.
+**Streaming Response**: Server-sent events (SSE) format with `data:` prefixed JSON chunks.
+
+Response type:
+- `{ type: 'text', content: string }` - AI response text
+- Stream ends with `data: [DONE]`
 
 ### Chat System Architecture
 
@@ -175,7 +180,7 @@ components/
 │   └── AIToolbar.tsx         # Expand/summarize buttons
 ├── Chat/             # Chat system UI
 │   ├── ChatButton.tsx        # Toggle chat window
-│   └── ChatWindow.tsx        # Chat interface with streaming
+│   └── ChatWindow.tsx        # Chat interface with streaming responses
 └── PropertyPanel/    # Node styling and properties
     └── PropertyPanel.tsx     # Text color, background, font settings
 ```
@@ -204,20 +209,24 @@ import type { CanvasNode } from '@/types';
 
 ## Canvas Interaction Patterns
 
+### Mouse/Trackpad Interactions
 - **Pan**: Shift + drag mouse, middle-click drag
 - **Zoom**: Ctrl/Cmd + scroll wheel (range: 0.1x - 3x)
 - **Move Canvas**: Scroll wheel
 - **Select Node**: Click node
 - **Deselect All**: Click canvas background
 - **Edit Node**: Double-click node
+- **Drag Node**: Click and drag (single or multi-select)
+
+### Keyboard Shortcuts
 - **Save Edit**: Ctrl/Cmd + Enter
 - **Cancel Edit**: Esc
-- **Delete Node**: Backspace/Delete when selected
+- **Delete Node**: Backspace/Delete (when node selected)
 - **Undo**: Ctrl/Cmd + Z
 - **Redo**: Ctrl/Cmd + Shift + Z (or Ctrl/Cmd + Y on Windows)
 - **Show AI Toolbar**: Tab key (when node selected)
 - **Show Properties**: Shift key (when node selected)
-- **Add Mind Map Child**: Tab key (in mind map node)
+- **Add Mind Map Child**: Tab key (when in mind map node edit mode)
 
 ### Viewport Coordinate System
 
@@ -247,7 +256,7 @@ When implementing AI features:
 2. Create client wrapper in `lib/ai.ts`
 3. Add UI trigger in appropriate component (usually AIToolbar)
 4. Use the proxy endpoint format with OpenAI-compatible schema:
-   - **Endpoint**: `https://lumos.diandian.info/winky/claude/v1/chat/completions`
+   - **Endpoint**: `https://lumos.diandian.info/winky/claude/messages` (native Anthropic format)
    - **Authorization**: `Bearer ${process.env.ANTHROPIC_API_KEY}`
    - **Content-Type**: `application/json`
 5. Tag generated nodes with proper `aiMetadata`
@@ -341,3 +350,101 @@ The application implements multi-layered error handling:
 - Use React DevTools to inspect Zustand store state
 - All node operations should persist immediately to IndexedDB
 - Chat history persists per canvas and survives page reloads
+
+## Common Development Tasks
+
+### Adding a New Node Type
+
+1. Define the node type in `types/index.ts` (extend `NodeType` union)
+2. Add type-specific metadata interface if needed
+3. Create a new component in `components/Nodes/`
+4. Update `Canvas.tsx` to render the new node type
+5. Add creation button/logic in `CanvasToolbar.tsx`
+6. Implement drag, edit, and selection behavior
+7. Update database schema if adding new indexed fields
+
+### Adding a New AI Feature
+
+1. Create API route: `app/api/ai/[feature]/route.ts`
+   - Use OpenAI-compatible format with proxy endpoint
+   - Add proper error handling and validation
+2. Create client wrapper in `lib/ai.ts`
+3. Add UI controls (typically in `AIToolbar.tsx` or context menu)
+4. Tag AI-generated content with `aiMetadata` field
+5. Handle loading states in the UI
+6. Test error scenarios (network failure, API errors)
+
+### Modifying Database Schema
+
+1. Increment version number in `lib/db.ts` constructor
+2. Add new `this.version(N).stores({ ... })` block
+3. Define new tables or add indexes to existing tables
+4. Test migration by opening app with old data
+5. Update TypeScript types in `types/index.ts`
+6. Update store actions in `lib/store.ts` if needed
+
+### Debugging Canvas Coordinate Issues
+
+When node positions seem incorrect:
+1. Check if screen→canvas conversion is applied during mouse events
+2. Verify canvas→screen conversion for rendering
+3. Ensure viewport offset and zoom are factored correctly
+4. Log both coordinate systems to console for comparison
+5. Check that positions are stored in canvas coordinates, not screen
+
+## Troubleshooting
+
+### AI Features Not Working
+
+**Symptom**: Expand/summarize buttons don't work or show errors
+
+**Solutions**:
+1. Check `.env.local` has `ANTHROPIC_API_KEY` set
+2. Verify API proxy is accessible: `https://lumos.diandian.info/winky/claude`
+3. Check browser console for error messages
+4. Verify API key is valid (contact administrator)
+5. Check network tab for failed API requests
+
+### IndexedDB Data Loss
+
+**Symptom**: Canvas state doesn't persist after reload
+
+**Solutions**:
+1. Check browser DevTools → Application → IndexedDB for database presence
+2. Verify IndexedDB is not disabled (private/incognito mode may block it)
+3. Check console for Dexie initialization errors
+4. Ensure sufficient storage quota available
+5. Try clearing browser cache and reloading (last resort)
+
+### Performance Issues with Large Canvases
+
+**Symptom**: Canvas becomes laggy with many nodes
+
+**Solutions**:
+1. Check node count (>1000 nodes may cause performance issues)
+2. Consider implementing viewport culling (only render visible nodes)
+3. Profile with React DevTools to identify unnecessary re-renders
+4. Verify React.memo is applied to node components
+5. Check for memory leaks in event handlers or store subscriptions
+
+### Mind Map Layout Issues
+
+**Symptom**: Mind map nodes overlap or have incorrect positions
+
+**Solutions**:
+1. Verify parent-child relationships in `mindMapMetadata`
+2. Check that `calculateMindMapLayout()` is called after structure changes
+3. Ensure collapsed state propagates to all descendants
+4. Review spacing constants in `lib/mindmap-layout.ts`
+5. Check that layout updates trigger store updates properly
+
+### Chat Context Not Working
+
+**Symptom**: AI chat doesn't know about canvas content
+
+**Solutions**:
+1. Verify `initialNodes` snapshot is captured when chat opens
+2. Check that `detectNodeChanges()` is detecting modifications
+3. Review context-builder output in console logs
+4. Ensure chat references are properly attached
+5. Verify node content is being serialized correctly

@@ -30,14 +30,33 @@ export async function POST(request: NextRequest) {
     }
 
     // 构建系统 prompt
-    const systemPrompt = `你是一个思维扩展助手，帮助用户在无限画布上整理和扩展想法。
+    const systemPrompt = `你是一位深思熟虑的思考者，擅长阅读与理解复杂内容。
+你会仔细分析用户提供的上下文，并基于这些内容展开有深度的思考与讨论。
 
-你的能力：
-1. 基于画布内容生成新的想法和扩展点
-2. 回答关于画布内容的问题
-3. 进行通用对话，提供建议和指导
+你关注逻辑、背景、推理、假设和可能的多种视角，而不是仅仅给出表面答案。
+你擅长提出启发性的问题，帮助用户更清晰地表达、推演或验证自己的想法。
 
-用户的画布内容会作为上下文提供。请结合画布内容和用户需求给出有价值的回答。用中文回复。`;
+当用户提问或讨论时：
+
+你先理解用户当前的研究主题与目的。
+
+结合画布中的信息，分析关键概念、假设与潜在含义。
+
+用有条理的方式回应，展现批判性思考与创造性洞见。
+
+在必要时引用画布中的相关内容，以保持讨论的连贯性。
+
+鼓励深入探讨，而非匆忙下结论。
+
+表达风格：
+
+语气冷静、理性，但富有共鸣。
+
+使用清晰的逻辑结构（例如“首先…其次…最后…”）。
+
+当合适时，可以提出反思性或发人深省的问题，引导进一步讨论。
+
+避免空洞的赞美或模糊的表述。用中文回复。`;
 
     // 构建上下文消息
     const contextMessages: Array<{ role: string; content: string }> = [];
@@ -90,36 +109,51 @@ export async function POST(request: NextRequest) {
       content: userMessage
     });
 
-    // 调用 Claude API（使用 OpenAI 兼容接口，模型使用 Sonnet 4.5）
+    // 构建 API 请求体
+    const requestBody: Record<string, unknown> = {
+      model: 'claude-sonnet-4-5-20250929', // Sonnet 4.5
+      max_tokens: 4096,
+      system: systemPrompt, // System prompt 作为独立参数
+      messages: contextMessages, // 只包含 user 和 assistant 消息
+      stream: true, // 启用流式响应
+    };
+
+    // 调用 Claude API
     const apiResponse = await fetch('https://lumos.diandian.info/winky/claude/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.ANTHROPIC_API_KEY}`,
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929', // Sonnet 4.5
-        max_tokens: 4096,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          ...contextMessages
-        ],
-        stream: true, // 启用流式响应
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!apiResponse.ok) {
-      const errorData = await apiResponse.json();
+      let errorData;
+      const contentType = apiResponse.headers.get('content-type');
+
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await apiResponse.json();
+        } else {
+          errorData = { message: await apiResponse.text() };
+        }
+      } catch (e) {
+        errorData = { message: 'Failed to parse error response' };
+      }
+
       console.error('API Error:', {
         status: apiResponse.status,
         statusText: apiResponse.statusText,
-        errorData
+        errorData,
+        requestBody: JSON.stringify(requestBody, null, 2)
       });
+
       return new Response(
-        JSON.stringify({ error: errorData.msg || errorData.error || 'API request failed' }),
+        JSON.stringify({
+          error: errorData.msg || errorData.message || errorData.error || 'API request failed',
+          details: errorData
+        }),
         { status: apiResponse.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -144,25 +178,38 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            // 解析 SSE 格式的数据
+            // 解析 SSE 格式的数据（Anthropic 原生格式）
             const chunk = decoder.decode(value);
             const lines = chunk.split('\n');
 
             for (const line of lines) {
               if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
+                const data = line.slice(6).trim();
+                if (data === '[DONE]' || !data) {
                   continue;
                 }
 
                 try {
-                  const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content;
-                  if (content) {
-                    // 转发内容给客户端
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+                  const event = JSON.parse(data);
+
+                  // 支持两种格式：
+                  // 1. Anthropic 原生格式: { type: 'content_block_delta', delta: { type: 'text_delta', text: '...' } }
+                  // 2. OpenAI 格式: { choices: [{ delta: { content: '...' } }] }
+
+                  if (event.type === 'content_block_delta') {
+                    // Anthropic 原生格式
+                    if (event.delta?.type === 'text_delta') {
+                      const textContent = event.delta.text;
+                      if (textContent) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: textContent })}\n\n`));
+                      }
+                    }
+                  } else if (event.choices && event.choices[0]?.delta?.content) {
+                    // OpenAI 格式
+                    const textContent = event.choices[0].delta.content;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: textContent })}\n\n`));
                   }
-                } catch {
+                } catch (e) {
                   // 忽略解析错误
                 }
               }
