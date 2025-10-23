@@ -78,7 +78,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   }, [session, session?.messages, streamingMessage]);
 
   // 处理工具调用
-  const handleToolCall = async (toolName: string, input: any): Promise<string[]> => {
+  const handleToolCall = async (toolName: string, input: Record<string, unknown>): Promise<string[]> => {
     const toolLabels: Record<string, string> = {
       'add_text_node': '正在创建文本框...',
       'add_sticky_note': '正在创建便签...',
@@ -95,9 +95,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
       switch (toolName) {
         case 'add_text_node': {
-          const size = calculateTextNodeSize(input.content);
+          const size = calculateTextNodeSize(input.content as string);
 
-          const position = input.position || findNonOverlappingPosition({
+          const position = (input.position as { x: number; y: number } | undefined) || findNonOverlappingPosition({
             width: size.width,
             height: size.height,
             nodes: currentNodes
@@ -105,7 +105,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
           const nodeId = await addNode({
             type: 'text',
-            content: input.content,
+            content: input.content as string,
             position,
             size,
             connections: [],
@@ -123,10 +123,10 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
           const nodeId = await addNode({
             type: 'sticky',
-            content: input.content,
+            content: input.content as string,
             position,
             size: { width: 200, height: 200 },
-            color: input.color || 'yellow',
+            color: (input.color as string | undefined) || 'yellow',
             connections: [],
           });
           createdNodeIds.push(nodeId);
@@ -144,11 +144,15 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           // 记录创建前的节点ID
           const nodesBefore = useCanvasStore.getState().nodes.map(n => n.id);
 
-          await createMindMapNetwork(input.root, input.children || [], {
-            addNode,
-            startPosition: position,
-            getAllNodes: () => useCanvasStore.getState().nodes
-          });
+          await createMindMapNetwork(
+            input.root as string,
+            (input.children as string[] | undefined) || [],
+            {
+              addNode,
+              startPosition: position,
+              getAllNodes: () => useCanvasStore.getState().nodes
+            }
+          );
 
           // 找出新创建的节点ID
           const nodesAfter = useCanvasStore.getState().nodes;
@@ -167,6 +171,96 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     }
 
     return createdNodeIds;
+  };
+
+  // 处理 API 调用并处理流式响应
+  const callAIAndProcessStream = async (requestBody: Record<string, unknown>) => {
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: await response.text() };
+      }
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData
+      });
+      throw new Error(`Failed to get response from AI: ${response.status} ${response.statusText}\n${JSON.stringify(errorData, null, 2)}`);
+    }
+
+    // 处理流式响应
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullMessage = '';
+    const toolCallsList: ToolCallInfo[] = [];
+
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            try {
+              const parsed = JSON.parse(data);
+
+              // 处理普通文本内容
+              if (parsed.type === 'text' && parsed.content) {
+                fullMessage += parsed.content;
+                setStreamingMessage(fullMessage);
+              }
+
+              // 向后兼容：如果没有 type 字段，默认当作文本
+              if (!parsed.type && parsed.content) {
+                fullMessage += parsed.content;
+                setStreamingMessage(fullMessage);
+              }
+
+              // 处理工具调用
+              if (parsed.type === 'tool_use') {
+                const nodeIds = await handleToolCall(parsed.tool, parsed.input);
+
+                // 记录工具调用信息（包含 tool_use_id 和 input）
+                toolCallsList.push({
+                  tool_use_id: parsed.tool_use_id,
+                  tool: parsed.tool,
+                  input: parsed.input, // 保存输入参数
+                  nodeIds,
+                  status: 'pending'
+                });
+
+                // 添加工具调用反馈到消息中
+                const toolNames: Record<string, string> = {
+                  'add_text_node': '已创建文本框',
+                  'add_sticky_note': '已创建便签',
+                  'create_mindmap': '已创建思维导图'
+                };
+                fullMessage += `✨ ${toolNames[parsed.tool] || '已执行操作'}`;
+                setStreamingMessage(fullMessage);
+              }
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+      }
+    }
+
+    return { fullMessage, toolCallsList };
   };
 
   // 处理发送消息
@@ -204,107 +298,78 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       const currentSession = useCanvasStore.getState().chatSessions.find(s => s.id === chatId);
       const currentChatMessages = currentSession?.messages || [];
 
-      // 准备 API 请求（发送完整消息包含引用）
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userMessage: apiMessage, // 发送包含引用的完整消息
-          initialNodes: nodes,
-          nodeChanges,
-          chatHistory: currentChatMessages.slice(0, -1), // 不包括刚添加的用户消息
-        }),
+      // 第一轮：发送用户消息
+      const { fullMessage: firstMessage, toolCallsList } = await callAIAndProcessStream({
+        userMessage: apiMessage,
+        initialNodes: nodes,
+        nodeChanges,
+        chatHistory: currentChatMessages.slice(0, -1),
       });
 
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { error: await response.text() };
-        }
-        console.error('API Error Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
-        throw new Error(`Failed to get response from AI: ${response.status} ${response.statusText}\n${JSON.stringify(errorData, null, 2)}`);
-      }
-
-      // 处理流式响应
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullMessage = '';
-      const toolCallsList: ToolCallInfo[] = [];
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              try {
-                const parsed = JSON.parse(data);
-
-                // 处理普通文本内容
-                if (parsed.type === 'text' && parsed.content) {
-                  fullMessage += parsed.content;
-                  setStreamingMessage(fullMessage);
-                }
-
-                // 向后兼容：如果没有 type 字段，默认当作文本
-                if (!parsed.type && parsed.content) {
-                  fullMessage += parsed.content;
-                  setStreamingMessage(fullMessage);
-                }
-
-                // 处理工具调用
-                if (parsed.type === 'tool_use') {
-                  const nodeIds = await handleToolCall(parsed.tool, parsed.input);
-
-                  // 记录工具调用信息
-                  toolCallsList.push({
-                    tool: parsed.tool,
-                    nodeIds,
-                    status: 'pending'
-                  });
-
-                  // 添加工具调用反馈到消息中
-                  const toolNames: Record<string, string> = {
-                    'add_text_node': '已创建文本框',
-                    'add_sticky_note': '已创建便签',
-                    'create_mindmap': '已创建思维导图'
-                  };
-                  fullMessage += `✨ ${toolNames[parsed.tool] || '已执行操作'}`;
-                  setStreamingMessage(fullMessage);
-                }
-              } catch {
-                // 忽略解析错误
-              }
-            }
-          }
-        }
-      }
-
-      // 保存完整的 AI 回复（即使只有工具调用也要保存）
-      if (fullMessage || toolCallsList.length > 0) {
+      // 如果有工具调用，进行第二轮对话
+      if (toolCallsList.length > 0) {
+        // 先保存第一轮的 AI 回复（包含工具调用）
         await addChatMessage(
           chatId,
           'assistant',
-          fullMessage || '✨ 已完成操作',
-          undefined, // references
-          toolCallsList.length > 0 ? toolCallsList : undefined // toolCalls
+          firstMessage || '',
+          undefined,
+          toolCallsList
         );
+
+        // 构建工具结果
+        const toolResults = toolCallsList.map(toolCall => {
+          const toolNames: Record<string, string> = {
+            'add_text_node': '文本框',
+            'add_sticky_note': '便签',
+            'create_mindmap': '思维导图'
+          };
+
+          return {
+            tool_use_id: toolCall.tool_use_id,
+            success: true,
+            result: `成功创建${toolNames[toolCall.tool] || '节点'}`,
+            nodeIds: toolCall.nodeIds,
+            nodeCount: toolCall.nodeIds.length
+          };
+        });
+
+        // 清空流式消息显示
         setStreamingMessage('');
+
+        // 第二轮：发送工具结果
+        const updatedSession = useCanvasStore.getState().chatSessions.find(s => s.id === chatId);
+        const updatedChatMessages = updatedSession?.messages || [];
+
+        const { fullMessage: secondMessage } = await callAIAndProcessStream({
+          initialNodes: nodes,
+          nodeChanges: null,
+          chatHistory: updatedChatMessages,
+          toolResults,
+        });
+
+        // 保存第二轮的 AI 回复（AI 对工具执行的总结）
+        if (secondMessage) {
+          await addChatMessage(
+            chatId,
+            'assistant',
+            secondMessage,
+            undefined,
+            undefined
+          );
+        }
+      } else {
+        // 没有工具调用，直接保存消息
+        await addChatMessage(
+          chatId,
+          'assistant',
+          firstMessage || '',
+          undefined,
+          undefined
+        );
       }
 
+      setStreamingMessage('');
       // 清空引用
       clearChatReferences(chatId);
     } catch (error) {

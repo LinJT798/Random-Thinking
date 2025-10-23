@@ -99,9 +99,21 @@ export interface ChatMessage {
 }
 
 export interface ToolCallInfo {
+  tool_use_id: string; // 工具调用唯一标识
   tool: string;
+  input: Record<string, unknown>; // 工具输入参数（保存以便重建 tool_calls）
   nodeIds: string[]; // 创建的节点ID列表
   status: 'pending' | 'confirmed' | 'rejected'; // 确认状态
+}
+
+// 工具执行结果
+export interface ToolResult {
+  tool_use_id: string; // 对应 ToolCallInfo 的 ID
+  success: boolean; // 执行是否成功
+  result: string; // 结果描述
+  error?: string; // 错误信息（如果失败）
+  nodeIds?: string[]; // 创建的节点ID（如果成功）
+  nodeCount?: number; // 创建的节点数量
 }
 
 // 画布快照类型

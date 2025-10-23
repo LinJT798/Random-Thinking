@@ -1,22 +1,24 @@
 import { NextRequest } from 'next/server';
-import type { ChatMessage, CanvasNode, NodeChanges } from '@/types';
+import type { ChatMessage, CanvasNode, NodeChanges, ToolResult } from '@/types';
 import { buildInitialContext, buildIncrementalContext } from '@/lib/context-builder';
 
 interface ChatRequest {
-  userMessage: string;
+  userMessage?: string; // 首次消息时必须，工具返回时可选
   initialNodes: CanvasNode[];
   nodeChanges: NodeChanges | null;
   chatHistory: ChatMessage[];
+  toolResults?: ToolResult[]; // 工具执行结果（多轮对话）
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
-    const { userMessage, initialNodes, nodeChanges, chatHistory } = body;
+    const { userMessage, initialNodes, nodeChanges, chatHistory, toolResults } = body;
 
-    if (!userMessage || !userMessage.trim()) {
+    // 验证：要么有用户消息，要么有工具结果
+    if (!userMessage?.trim() && !toolResults?.length) {
       return new Response(
-        JSON.stringify({ error: 'Message is required' }),
+        JSON.stringify({ error: 'Either userMessage or toolResults is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -79,10 +81,26 @@ export async function POST(request: NextRequest) {
     // 2. 历史对话（包含所有历史消息以保持上下文连续性）
     chatHistory.forEach(msg => {
       if (msg.role !== 'system') {
-        contextMessages.push({
-          role: msg.role,
-          content: msg.content
-        });
+        // 如果是包含工具调用的助手消息，需要构建 tool_calls 格式
+        if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+          contextMessages.push({
+            role: 'assistant',
+            content: msg.content || null,
+            tool_calls: msg.toolCalls.map(tc => ({
+              id: tc.tool_use_id,
+              type: 'function' as const,
+              function: {
+                name: tc.tool,
+                arguments: JSON.stringify(tc.input) // 使用保存的输入参数
+              }
+            }))
+          } as any);
+        } else {
+          contextMessages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
       }
     });
 
@@ -104,11 +122,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. 当前用户消息
-    contextMessages.push({
-      role: 'user',
-      content: userMessage
-    });
+    // 4. 工具执行结果（如果有）
+    if (toolResults && toolResults.length > 0) {
+      toolResults.forEach(result => {
+        // 添加工具结果消息（OpenAI 兼容格式）
+        const toolMessage: { role: string; tool_call_id: string; content: string } = {
+          role: 'tool',
+          tool_call_id: result.tool_use_id,
+          content: result.success
+            ? `工具执行成功：${result.result}\n创建了 ${result.nodeCount || result.nodeIds?.length || 0} 个节点。`
+            : `工具执行失败：${result.error || '未知错误'}`
+        };
+        contextMessages.push(toolMessage as { role: string; content: string });
+      });
+    }
+
+    // 5. 当前用户消息（如果有）
+    if (userMessage) {
+      contextMessages.push({
+        role: 'user',
+        content: userMessage
+      });
+    }
 
     // 定义工具（Tools）
     const tools = [
@@ -338,6 +373,7 @@ export async function POST(request: NextRequest) {
 
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                           type: 'tool_use',
+                          tool_use_id: currentToolCall.id || `tool_${Date.now()}`, // 工具调用唯一ID
                           tool: currentToolCall.name,
                           input: toolInput
                         })}\n\n`));
