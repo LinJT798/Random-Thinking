@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import { calculateTextNodeSize } from '@/lib/text-size-calculator';
 import TextNode from '../Nodes/TextNode';
 import StickyNote from '../Nodes/StickyNote';
 import MindMapNode from '../MindMap/MindMapNode';
@@ -78,11 +79,14 @@ export default function Canvas({ canvasId }: CanvasProps) {
         const x = (e.clientX - viewportOffset.x) / zoom;
         const y = (e.clientY - viewportOffset.y) / zoom;
 
+        // 计算文本所需的尺寸
+        const size = calculateTextNodeSize(draggingText);
+
         await addNode({
           type: 'text',
           content: draggingText,
           position: { x, y },
-          size: { width: 300, height: 150 },
+          size,
           connections: [],
         });
 
