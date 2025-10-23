@@ -95,6 +95,13 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   references?: ChatReference[]; // 引用内容（仅用户消息）
+  toolCalls?: ToolCallInfo[]; // 工具调用信息（仅助手消息）
+}
+
+export interface ToolCallInfo {
+  tool: string;
+  nodeIds: string[]; // 创建的节点ID列表
+  status: 'pending' | 'confirmed' | 'rejected'; // 确认状态
 }
 
 // 画布快照类型

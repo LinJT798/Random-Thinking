@@ -61,8 +61,13 @@ The application uses a centralized Zustand store (`lib/store.ts`) for all canvas
 - **History/Undo**: Implements undo/redo via history stack
 - **Mind Map Operations**: Special handlers for hierarchical node relationships
 - **Chat System**: Chat window state, message history, and canvas context tracking
+- **Tool Call Management**: Handles confirmation/rejection of AI-generated nodes with database persistence
 
 All state mutations automatically sync to IndexedDB through the database layer.
+
+**Key Store Methods**:
+- `confirmToolCall(chatId, messageId, toolIndex)`: Marks tool call as confirmed and persists to DB
+- `rejectToolCall(chatId, messageId, toolIndex)`: Deletes created nodes, marks as rejected, persists to DB
 
 ### Database Layer (`lib/db.ts`)
 
@@ -121,9 +126,17 @@ POST /api/ai/chat
 
 **Streaming Response**: Server-sent events (SSE) format with `data:` prefixed JSON chunks.
 
-Response type:
+Response types:
 - `{ type: 'text', content: string }` - AI response text
+- `{ type: 'tool_use', tool: string, input: any }` - Tool call request
 - Stream ends with `data: [DONE]`
+
+**Tool Use Flow**:
+1. Server sends `{ type: 'tool_use', tool: 'add_text_node', input: {...} }`
+2. Client executes tool via `handleToolCall()` and creates nodes
+3. Tool call info stored in message with `status: 'pending'`
+4. User can confirm or reject via UI buttons
+5. Confirmation persists to database
 
 ### Chat System Architecture
 
@@ -139,6 +152,12 @@ The chat system maintains context awareness by:
 - Separate window position and size
 - Own set of references
 - Isolated context snapshots
+
+**Tool Call Confirmation**: When AI creates nodes via tool calls (add_text_node, add_sticky_note, create_mindmap), the user can:
+- **Confirm** (保留): Keep the created nodes and mark as confirmed
+- **Reject** (删除): Delete the created nodes and mark as rejected
+- Confirmation status persists to IndexedDB and survives page reloads
+- UI shows pending/confirmed/rejected states with visual indicators
 
 ### Node Types
 
@@ -180,7 +199,7 @@ components/
 │   └── AIToolbar.tsx         # Expand/summarize buttons
 ├── Chat/             # Chat system UI
 │   ├── ChatButton.tsx        # Toggle chat window
-│   └── ChatWindow.tsx        # Chat interface with streaming responses
+│   └── ChatWindow.tsx        # Chat interface with streaming responses and tool call confirmation UI
 └── PropertyPanel/    # Node styling and properties
     └── PropertyPanel.tsx     # Text color, background, font settings
 ```
@@ -448,3 +467,14 @@ When node positions seem incorrect:
 3. Review context-builder output in console logs
 4. Ensure chat references are properly attached
 5. Verify node content is being serialized correctly
+
+### Tool Call Confirmation State Lost After Reload
+
+**Symptom**: Tool call confirmation status resets to 'pending' after page refresh
+
+**Solutions**:
+1. ✅ Fixed: `confirmToolCall()` and `rejectToolCall()` now persist to IndexedDB
+2. Verify `db.updateChatSession()` is being called after confirmation
+3. Check browser console for database update errors
+4. Ensure chat session messages are properly loaded from database on page load
+5. Inspect IndexedDB (Application tab) to verify `chatSessions` table has updated messages

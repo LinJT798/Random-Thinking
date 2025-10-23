@@ -65,7 +65,9 @@ interface CanvasStore {
   deleteChatSession: (chatId: string) => Promise<void>;
 
   sendChatMessage: (chatId: string, content: string) => Promise<void>;
-  addChatMessage: (chatId: string, role: 'user' | 'assistant', content: string, references?: ChatReference[]) => Promise<void>;
+  addChatMessage: (chatId: string, role: 'user' | 'assistant', content: string, references?: ChatReference[], toolCalls?: ToolCallInfo[]) => Promise<void>;
+  confirmToolCall: (chatId: string, messageId: string, toolIndex: number) => Promise<void>;
+  rejectToolCall: (chatId: string, messageId: string, toolIndex: number) => Promise<void>;
   loadChatHistory: (chatId: string) => Promise<void>;
   clearChatHistory: (chatId: string) => Promise<void>;
 
@@ -479,7 +481,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   // 添加聊天消息
-  addChatMessage: async (chatId, role, content, references) => {
+  addChatMessage: async (chatId, role, content, references, toolCalls) => {
     const { chatSessions, currentCanvasId } = get();
     if (!currentCanvasId) return;
 
@@ -494,6 +496,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       content,
       timestamp: Date.now(),
       references,
+      toolCalls,
     };
 
     // 更新会话
@@ -511,6 +514,93 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     });
 
     // 保存到数据库
+    await db.updateChatSession(chatId, {
+      messages: updatedSession.messages,
+      updatedAt: updatedSession.updatedAt,
+    });
+  },
+
+  // 确认工具调用
+  confirmToolCall: async (chatId, messageId, toolIndex) => {
+    const { chatSessions } = get();
+    const session = chatSessions.find(s => s.id === chatId);
+    if (!session) return;
+
+    const updatedMessages = session.messages.map(msg => {
+      if (msg.id === messageId && msg.toolCalls) {
+        const updatedToolCalls = [...msg.toolCalls];
+        if (updatedToolCalls[toolIndex]) {
+          updatedToolCalls[toolIndex] = {
+            ...updatedToolCalls[toolIndex],
+            status: 'confirmed'
+          };
+        }
+        return { ...msg, toolCalls: updatedToolCalls };
+      }
+      return msg;
+    });
+
+    const updatedSession = {
+      ...session,
+      messages: updatedMessages,
+      updatedAt: Date.now(),
+    };
+
+    set({
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? updatedSession : s
+      )
+    });
+
+    // 持久化到数据库
+    await db.updateChatSession(chatId, {
+      messages: updatedSession.messages,
+      updatedAt: updatedSession.updatedAt,
+    });
+  },
+
+  // 拒绝工具调用
+  rejectToolCall: async (chatId, messageId, toolIndex) => {
+    const { chatSessions, deleteNode } = get();
+    const session = chatSessions.find(s => s.id === chatId);
+    if (!session) return;
+
+    const message = session.messages.find(msg => msg.id === messageId);
+    if (!message?.toolCalls || !message.toolCalls[toolIndex]) return;
+
+    const toolCall = message.toolCalls[toolIndex];
+
+    // 删除创建的节点
+    for (const nodeId of toolCall.nodeIds) {
+      await deleteNode(nodeId);
+    }
+
+    // 更新状态为 rejected
+    const updatedMessages = session.messages.map(msg => {
+      if (msg.id === messageId && msg.toolCalls) {
+        const updatedToolCalls = [...msg.toolCalls];
+        updatedToolCalls[toolIndex] = {
+          ...updatedToolCalls[toolIndex],
+          status: 'rejected'
+        };
+        return { ...msg, toolCalls: updatedToolCalls };
+      }
+      return msg;
+    });
+
+    const updatedSession = {
+      ...session,
+      messages: updatedMessages,
+      updatedAt: Date.now(),
+    };
+
+    set({
+      chatSessions: chatSessions.map(s =>
+        s.id === chatId ? updatedSession : s
+      )
+    });
+
+    // 持久化到数据库
     await db.updateChatSession(chatId, {
       messages: updatedSession.messages,
       updatedAt: updatedSession.updatedAt,

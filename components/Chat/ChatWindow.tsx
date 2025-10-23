@@ -8,6 +8,7 @@ import { detectNodeChanges } from '@/lib/context-builder';
 import { calculateTextNodeSize } from '@/lib/text-size-calculator';
 import { createMindMapNetwork } from '@/lib/mindmap-creator';
 import { findNonOverlappingPosition } from '@/lib/smart-layout';
+import type { ToolCallInfo } from '@/types';
 
 interface ChatWindowProps {
   chatId: string;
@@ -54,6 +55,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     draggingText,
     setDraggingText,
     addChatReference,
+    confirmToolCall,
+    rejectToolCall,
   } = useCanvasStore();
 
   // Get the specific chat session
@@ -75,7 +78,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   }, [session, session?.messages, streamingMessage]);
 
   // 处理工具调用
-  const handleToolCall = async (toolName: string, input: any) => {
+  const handleToolCall = async (toolName: string, input: any): Promise<string[]> => {
     const toolLabels: Record<string, string> = {
       'add_text_node': '正在创建文本框...',
       'add_sticky_note': '正在创建便签...',
@@ -83,6 +86,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     };
 
     setToolCallStatus(toolLabels[toolName] || '正在执行操作...');
+
+    const createdNodeIds: string[] = [];
 
     try {
       // 获取最新的 nodes 状态（确保看到刚刚创建的节点）
@@ -98,13 +103,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             nodes: currentNodes
           });
 
-          await addNode({
+          const nodeId = await addNode({
             type: 'text',
             content: input.content,
             position,
             size,
             connections: [],
           });
+          createdNodeIds.push(nodeId);
           break;
         }
 
@@ -115,7 +121,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             nodes: currentNodes
           });
 
-          await addNode({
+          const nodeId = await addNode({
             type: 'sticky',
             content: input.content,
             position,
@@ -123,6 +129,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             color: input.color || 'yellow',
             connections: [],
           });
+          createdNodeIds.push(nodeId);
           break;
         }
 
@@ -134,11 +141,21 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             nodes: currentNodes
           });
 
+          // 记录创建前的节点ID
+          const nodesBefore = useCanvasStore.getState().nodes.map(n => n.id);
+
           await createMindMapNetwork(input.root, input.children || [], {
             addNode,
             startPosition: position,
             getAllNodes: () => useCanvasStore.getState().nodes
           });
+
+          // 找出新创建的节点ID
+          const nodesAfter = useCanvasStore.getState().nodes;
+          const newNodeIds = nodesAfter
+            .filter(n => !nodesBefore.includes(n.id))
+            .map(n => n.id);
+          createdNodeIds.push(...newNodeIds);
           break;
         }
       }
@@ -148,6 +165,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       console.error('Tool call failed:', error);
       setToolCallStatus('');
     }
+
+    return createdNodeIds;
   };
 
   // 处理发送消息
@@ -218,7 +237,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullMessage = '';
-      let hasToolCalls = false;
+      const toolCallsList: ToolCallInfo[] = [];
 
       if (reader) {
         while (true) {
@@ -248,15 +267,22 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
                 // 处理工具调用
                 if (parsed.type === 'tool_use') {
-                  hasToolCalls = true;
-                  await handleToolCall(parsed.tool, parsed.input);
+                  const nodeIds = await handleToolCall(parsed.tool, parsed.input);
+
+                  // 记录工具调用信息
+                  toolCallsList.push({
+                    tool: parsed.tool,
+                    nodeIds,
+                    status: 'pending'
+                  });
+
                   // 添加工具调用反馈到消息中
                   const toolNames: Record<string, string> = {
                     'add_text_node': '已创建文本框',
                     'add_sticky_note': '已创建便签',
                     'create_mindmap': '已创建思维导图'
                   };
-                  fullMessage += `\n\n✨ ${toolNames[parsed.tool] || '已执行操作'}`;
+                  fullMessage += `✨ ${toolNames[parsed.tool] || '已执行操作'}`;
                   setStreamingMessage(fullMessage);
                 }
               } catch {
@@ -268,8 +294,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       }
 
       // 保存完整的 AI 回复（即使只有工具调用也要保存）
-      if (fullMessage || hasToolCalls) {
-        await addChatMessage(chatId, 'assistant', fullMessage || '✨ 已完成操作');
+      if (fullMessage || toolCallsList.length > 0) {
+        await addChatMessage(
+          chatId,
+          'assistant',
+          fullMessage || '✨ 已完成操作',
+          undefined, // references
+          toolCallsList.length > 0 ? toolCallsList : undefined // toolCalls
+        );
         setStreamingMessage('');
       }
 
@@ -574,30 +606,138 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 </div>
               )}
 
-              {/* 消息气泡 */}
-              <div
-                className={`rounded-2xl px-4 py-2 relative ${
-                  msg.role === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-900 select-text cursor-text'
-                }`}
-                onMouseUp={(e) => msg.role === 'assistant' && handleTextSelection(e)}
-              >
-                <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
-              </div>
+              {/* 如果有工具调用，显示特殊卡片；否则显示普通消息气泡 */}
+              {msg.role === 'assistant' && msg.toolCalls ? (
+                // 工具调用特殊卡片
+                <div className="w-full space-y-2">
+                  {/* 如果有文字内容，先显示文字气泡 */}
+                  {msg.content && msg.content.trim() && !msg.content.includes('✨') && (
+                    <div
+                      className="rounded-2xl px-4 py-2 bg-gray-100 text-gray-900 select-text cursor-text"
+                      onMouseUp={(e) => handleTextSelection(e)}
+                    >
+                      <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
+                    </div>
+                  )}
 
-              {/* AI 消息的添加到画布按钮 */}
-              {msg.role === 'assistant' && (
-                <button
-                  onClick={() => handleAddToCanvas(msg.content)}
-                  className="mt-1 text-xs text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1"
-                  title="添加到画布"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>添加到画布</span>
-                </button>
+                  {/* 工具调用卡片 */}
+                  {msg.toolCalls.map((toolCall, index) => {
+                    // 工具类型映射
+                    const toolInfo: Record<string, { icon: string; name: string; description: string }> = {
+                      'add_text_node': { icon: '📝', name: '文本框', description: '创建了文本框' },
+                      'add_sticky_note': { icon: '📌', name: '便签', description: '创建了便签' },
+                      'create_mindmap': { icon: '🧠', name: '思维导图', description: '创建了思维导图' }
+                    };
+
+                    const info = toolInfo[toolCall.tool] || { icon: '✨', name: '节点', description: '执行了操作' };
+                    const nodeCount = toolCall.nodeIds.length;
+
+                    return (
+                      <div
+                        key={index}
+                        className="rounded-2xl border border-blue-200/50 bg-gradient-to-br from-blue-50/80 via-sky-50/80 to-cyan-50/80 shadow-md shadow-blue-100/30 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-blue-200/40 hover:-translate-y-0.5"
+                      >
+                        {/* 标题栏 */}
+                        <div className="bg-gradient-to-r from-blue-500 to-sky-500 px-4 py-2">
+                          <div className="flex items-center gap-2 text-white">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span className="text-sm font-semibold">AI 操作</span>
+                          </div>
+                        </div>
+
+                        {/* 内容区 */}
+                        <div className="px-4 py-3 space-y-3">
+                          {/* 操作详情 */}
+                          <div className="flex items-start gap-3">
+                            <div className="text-3xl leading-none">{info.icon}</div>
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-gray-800">{info.description}</div>
+                              {nodeCount > 1 && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  包含 <span className="font-semibold text-blue-600">{nodeCount}</span> 个节点
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 操作按钮 */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-blue-100/50">
+                            {toolCall.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => confirmToolCall(chatId, msg.id, index)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-blue-50 border-2 border-blue-300 hover:border-blue-400 text-blue-700 hover:text-blue-800 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow"
+                                  title="确认保留"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span>保留</span>
+                                </button>
+                                <button
+                                  onClick={() => rejectToolCall(chatId, msg.id, index)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-800 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow"
+                                  title="删除节点"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                  <span>删除</span>
+                                </button>
+                              </>
+                            )}
+                            {toolCall.status === 'confirmed' && (
+                              <div className="flex items-center justify-center gap-2 text-blue-700 py-2 px-4 bg-blue-100/50 rounded-xl w-full">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="text-sm font-semibold">已保留</span>
+                              </div>
+                            )}
+                            {toolCall.status === 'rejected' && (
+                              <div className="flex items-center justify-center gap-2 text-gray-600 py-2 px-4 bg-gray-100/50 rounded-xl w-full">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <span className="text-sm font-semibold">已删除</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                // 普通消息气泡
+                <>
+                  <div
+                    className={`rounded-2xl px-4 py-2 relative ${
+                      msg.role === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-900 select-text cursor-text'
+                    }`}
+                    onMouseUp={(e) => msg.role === 'assistant' && handleTextSelection(e)}
+                  >
+                    <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
+                  </div>
+
+                  {/* AI 消息的添加到画布按钮 */}
+                  {msg.role === 'assistant' && (
+                    <button
+                      onClick={() => handleAddToCanvas(msg.content)}
+                      className="mt-1 text-xs text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1"
+                      title="添加到画布"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>添加到画布</span>
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
