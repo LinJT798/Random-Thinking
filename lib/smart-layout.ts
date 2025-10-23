@@ -58,18 +58,13 @@ function checkCollision(
  * 策略：尝试多个候选位置，直到找到不重叠的位置
  */
 export function findNonOverlappingPosition(options: LayoutOptions): Position {
-  console.log('🎯 findNonOverlappingPosition 被调用', options);
-
   const { width, height, nodes, preferredPosition } = options;
   const spacing = 50;
 
   // 如果没有节点，返回默认位置
   if (nodes.length === 0) {
-    console.log('✅ 没有现有节点，使用默认位置');
     return preferredPosition || { x: 100, y: 100 };
   }
-
-  console.log('📊 现有节点数:', nodes.length);
 
   // 如果有首选位置且不重叠，直接使用
   if (preferredPosition && !checkCollision(preferredPosition.x, preferredPosition.y, width, height, nodes)) {
@@ -116,12 +111,9 @@ export function findNonOverlappingPosition(options: LayoutOptions): Position {
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i];
     if (!checkCollision(candidate.x, candidate.y, width, height, nodes)) {
-      console.log(`✅ 找到无重叠位置（策略${i + 1}）:`, candidate);
       return candidate;
     }
   }
-
-  console.log('⚠️ 预定义位置都重叠，开始网格搜索...');
 
   // 如果所有预定义位置都重叠，使用网格搜索
   // 从参考节点开始，螺旋式向外搜索

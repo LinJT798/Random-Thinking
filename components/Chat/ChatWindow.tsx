@@ -76,8 +76,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   // 处理工具调用
   const handleToolCall = async (toolName: string, input: any) => {
-    console.log('🔧 handleToolCall 被调用:', toolName, input);
-
     const toolLabels: Record<string, string> = {
       'add_text_node': '正在创建文本框...',
       'add_sticky_note': '正在创建便签...',
@@ -89,20 +87,16 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     try {
       // 获取最新的 nodes 状态（确保看到刚刚创建的节点）
       const currentNodes = useCanvasStore.getState().nodes;
-      console.log('📊 当前节点数量:', currentNodes.length);
 
       switch (toolName) {
         case 'add_text_node': {
-          console.log('📝 开始创建文本框...');
           const size = calculateTextNodeSize(input.content);
-          console.log('📏 计算尺寸:', size);
 
           const position = input.position || findNonOverlappingPosition({
             width: size.width,
             height: size.height,
             nodes: currentNodes
           });
-          console.log('📍 选定位置:', position);
 
           await addNode({
             type: 'text',
@@ -115,13 +109,11 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         }
 
         case 'add_sticky_note': {
-          console.log('📌 开始创建便签...');
           const position = findNonOverlappingPosition({
             width: 200,
             height: 200,
             nodes: currentNodes
           });
-          console.log('📍 选定位置:', position);
 
           await addNode({
             type: 'sticky',
@@ -135,14 +127,12 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         }
 
         case 'create_mindmap': {
-          console.log('🗺️ 开始创建思维导图...');
           // 思维导图会展开，预留超大空间
           const position = findNonOverlappingPosition({
             width: 2000,
             height: 1200,
             nodes: currentNodes
           });
-          console.log('📍 选定位置:', position);
 
           await createMindMapNetwork(input.root, input.children || [], {
             addNode,
