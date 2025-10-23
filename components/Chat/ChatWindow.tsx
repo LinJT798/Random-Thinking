@@ -5,6 +5,9 @@ import { useCanvasStore } from '@/lib/store';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import AddToButton from '../AddToButton';
 import { detectNodeChanges } from '@/lib/context-builder';
+import { calculateTextNodeSize } from '@/lib/text-size-calculator';
+import { createMindMapNetwork } from '@/lib/mindmap-creator';
+import { findNonOverlappingPosition } from '@/lib/smart-layout';
 
 interface ChatWindowProps {
   chatId: string;
@@ -15,6 +18,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
+  const [toolCallStatus, setToolCallStatus] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -69,6 +73,92 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [session, session?.messages, streamingMessage]);
+
+  // 处理工具调用
+  const handleToolCall = async (toolName: string, input: any) => {
+    console.log('🔧 handleToolCall 被调用:', toolName, input);
+
+    const toolLabels: Record<string, string> = {
+      'add_text_node': '正在创建文本框...',
+      'add_sticky_note': '正在创建便签...',
+      'create_mindmap': '正在创建思维导图...'
+    };
+
+    setToolCallStatus(toolLabels[toolName] || '正在执行操作...');
+
+    try {
+      // 获取最新的 nodes 状态（确保看到刚刚创建的节点）
+      const currentNodes = useCanvasStore.getState().nodes;
+      console.log('📊 当前节点数量:', currentNodes.length);
+
+      switch (toolName) {
+        case 'add_text_node': {
+          console.log('📝 开始创建文本框...');
+          const size = calculateTextNodeSize(input.content);
+          console.log('📏 计算尺寸:', size);
+
+          const position = input.position || findNonOverlappingPosition({
+            width: size.width,
+            height: size.height,
+            nodes: currentNodes
+          });
+          console.log('📍 选定位置:', position);
+
+          await addNode({
+            type: 'text',
+            content: input.content,
+            position,
+            size,
+            connections: [],
+          });
+          break;
+        }
+
+        case 'add_sticky_note': {
+          console.log('📌 开始创建便签...');
+          const position = findNonOverlappingPosition({
+            width: 200,
+            height: 200,
+            nodes: currentNodes
+          });
+          console.log('📍 选定位置:', position);
+
+          await addNode({
+            type: 'sticky',
+            content: input.content,
+            position,
+            size: { width: 200, height: 200 },
+            color: input.color || 'yellow',
+            connections: [],
+          });
+          break;
+        }
+
+        case 'create_mindmap': {
+          console.log('🗺️ 开始创建思维导图...');
+          // 思维导图会展开，预留超大空间
+          const position = findNonOverlappingPosition({
+            width: 2000,
+            height: 1200,
+            nodes: currentNodes
+          });
+          console.log('📍 选定位置:', position);
+
+          await createMindMapNetwork(input.root, input.children || [], {
+            addNode,
+            startPosition: position,
+            getAllNodes: () => useCanvasStore.getState().nodes
+          });
+          break;
+        }
+      }
+
+      setTimeout(() => setToolCallStatus(''), 1000);
+    } catch (error) {
+      console.error('Tool call failed:', error);
+      setToolCallStatus('');
+    }
+  };
 
   // 处理发送消息
   const handleSend = async () => {
@@ -138,6 +228,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullMessage = '';
+      let hasToolCalls = false;
 
       if (reader) {
         while (true) {
@@ -164,6 +255,20 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                   fullMessage += parsed.content;
                   setStreamingMessage(fullMessage);
                 }
+
+                // 处理工具调用
+                if (parsed.type === 'tool_use') {
+                  hasToolCalls = true;
+                  await handleToolCall(parsed.tool, parsed.input);
+                  // 添加工具调用反馈到消息中
+                  const toolNames: Record<string, string> = {
+                    'add_text_node': '已创建文本框',
+                    'add_sticky_note': '已创建便签',
+                    'create_mindmap': '已创建思维导图'
+                  };
+                  fullMessage += `\n\n✨ ${toolNames[parsed.tool] || '已执行操作'}`;
+                  setStreamingMessage(fullMessage);
+                }
               } catch {
                 // 忽略解析错误
               }
@@ -172,9 +277,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         }
       }
 
-      // 保存完整的 AI 回复
-      if (fullMessage) {
-        await addChatMessage(chatId, 'assistant', fullMessage);
+      // 保存完整的 AI 回复（即使只有工具调用也要保存）
+      if (fullMessage || hasToolCalls) {
+        await addChatMessage(chatId, 'assistant', fullMessage || '✨ 已完成操作');
         setStreamingMessage('');
       }
 
@@ -245,80 +350,38 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     }
   };
 
-  // 找到最佳的节点放置位置
-  const findBestPosition = () => {
-    const nodeWidth = 300;
-    const nodeHeight = 200;
-    const spacing = 50; // 节点之间的间距
-
-    // 如果没有节点，放在屏幕中心
-    if (nodes.length === 0) {
-      return {
-        x: window.innerWidth / 2 - nodeWidth / 2,
-        y: window.innerHeight / 2 - nodeHeight / 2,
-      };
-    }
-
-    // 找到最近创建的节点（最大的 createdAt）
-    const latestNode = nodes.reduce((latest, node) =>
-      node.createdAt > latest.createdAt ? node : latest
-    );
-
-    // 尝试在最近节点的右侧放置
-    let newX = latestNode.position.x + latestNode.size.width + spacing;
-    let newY = latestNode.position.y;
-
-    // 检查右侧位置是否与其他节点重叠
-    const wouldOverlap = (x: number, y: number) => {
-      return nodes.some(node => {
-        const horizontalOverlap =
-          x < node.position.x + node.size.width + spacing &&
-          x + nodeWidth + spacing > node.position.x;
-        const verticalOverlap =
-          y < node.position.y + node.size.height + spacing &&
-          y + nodeHeight + spacing > node.position.y;
-        return horizontalOverlap && verticalOverlap;
-      });
-    };
-
-    // 如果右侧有重叠，尝试下方
-    if (wouldOverlap(newX, newY)) {
-      newX = latestNode.position.x;
-      newY = latestNode.position.y + latestNode.size.height + spacing;
-    }
-
-    // 如果下方也有重叠，尝试右下方
-    if (wouldOverlap(newX, newY)) {
-      newX = latestNode.position.x + latestNode.size.width + spacing;
-      newY = latestNode.position.y + latestNode.size.height + spacing;
-    }
-
-    return { x: newX, y: newY };
-  };
-
   // 将消息添加到画布
   const handleAddToCanvas = async (content: string) => {
     if (!session) return;
 
-    // 找到最佳放置位置
-    const position = findBestPosition();
+    // 计算文本所需尺寸
+    const size = calculateTextNodeSize(content);
+
+    // 获取最新的 nodes 状态
+    const currentNodes = useCanvasStore.getState().nodes;
+
+    // 使用智能布局找到无重叠位置
+    const position = findNonOverlappingPosition({
+      width: size.width,
+      height: size.height,
+      nodes: currentNodes
+    });
 
     // 创建节点
     const nodeId = await addNode({
       type: 'text',
       content: content,
       position,
-      size: { width: 300, height: 200 },
+      size,
       connections: [],
     });
 
     // 触发视角移动事件
     if (nodeId) {
-      // 使用自定义事件通知 Canvas 移动视角
       window.dispatchEvent(new CustomEvent('focusNode', {
         detail: {
-          x: position.x + 150,  // 节点中心 x
-          y: position.y + 100   // 节点中心 y
+          x: position.x + size.width / 2,
+          y: position.y + size.height / 2
         }
       }));
     }
@@ -550,7 +613,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           </div>
         ))}
 
-        {isLoading && !streamingMessage && (
+        {isLoading && !streamingMessage && !toolCallStatus && (
           <div className="flex justify-start">
             <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gray-100 text-gray-900">
               <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -560,6 +623,20 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
                 <span>正在思考</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 工具调用状态 */}
+        {toolCallStatus && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50">
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{toolCallStatus}</span>
               </div>
             </div>
           </div>
