@@ -72,19 +72,14 @@ export function CanvasSwitcher() {
     try {
       console.log(`Switching to canvas ${canvasId}`)
 
-      // 保存当前画布状态到本地
+      // 保存当前画布状态到本地并同步到云端
       if (currentCanvas) {
         const store = useCanvasStore.getState()
         const currentNodes = store.nodes
 
-        // 更新画布的节点列表
-        await db.updateCanvas(currentCanvas.id, {
-          nodes: currentNodes.map(n => ({ id: n.id }))
-        })
+        console.log(`Saving ${currentNodes.length} nodes for canvas ${currentCanvas.id}`)
 
-        console.log(`Saved ${currentNodes.length} nodes for canvas ${currentCanvas.id}`)
-
-        // 同步到云端（静默）
+        // 同步到云端（静默，后台执行）
         syncManager.syncCanvasToCloud(currentCanvas.id).catch(err => {
           console.warn('Background sync failed:', err)
         })
