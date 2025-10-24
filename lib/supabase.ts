@@ -1,20 +1,14 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database.types'
 
 // 创建 Supabase 浏览器客户端（用于客户端组件）
 export function createClient() {
-  return createSupabaseClient<Database>(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-      },
-      global: {
-        headers: {
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        }
       }
     }
   )

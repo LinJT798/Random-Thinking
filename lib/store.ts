@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CanvasNode, CanvasData, LayoutType, ChatMessage, ChatReference, ChatSession } from '@/types';
+import type { CanvasNode, CanvasData, LayoutType, ChatMessage, ChatReference, ChatSession, ToolCallInfo } from '@/types';
 import { db } from './db';
 import { calculateMindMapLayout, getAllDescendantIds } from './mindmap-layout';
 
