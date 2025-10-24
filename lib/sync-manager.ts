@@ -252,7 +252,7 @@ export class SyncManager {
       await db.canvases.add({
         id: cloudCanvas.id,
         name: cloudCanvas.name,
-        nodes: cloudCanvas.nodes.map(n => ({ id: n.id })),
+        nodes: cloudCanvas.nodes,
         createdAt: cloudCanvas.createdAt,
         updatedAt: cloudCanvas.updatedAt,
       })
@@ -260,7 +260,7 @@ export class SyncManager {
       // 本地存在，更新
       await db.updateCanvas(cloudCanvas.id, {
         name: cloudCanvas.name,
-        nodes: cloudCanvas.nodes.map(n => ({ id: n.id })),
+        nodes: cloudCanvas.nodes,
       })
     }
 
