@@ -82,7 +82,7 @@ async function createChildNodes(
   const spacing = 50;
 
   // 动态计算垂直间距，确保不重叠
-  let verticalSpacing = 100;
+  const verticalSpacing = 100;
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i];

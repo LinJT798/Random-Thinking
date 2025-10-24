@@ -146,7 +146,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
           await createMindMapNetwork(
             input.root as string,
-            (input.children as string[] | undefined) || [],
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (input.children as any[] | undefined) || [],
             {
               addNode,
               startPosition: position,
