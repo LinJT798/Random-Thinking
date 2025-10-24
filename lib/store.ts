@@ -65,7 +65,7 @@ interface CanvasStore {
   deleteChatSession: (chatId: string) => Promise<void>;
 
   sendChatMessage: (chatId: string, content: string) => Promise<void>;
-  addChatMessage: (chatId: string, role: 'user' | 'assistant', content: string, references?: ChatReference[], toolCalls?: ToolCallInfo[]) => Promise<void>;
+  addChatMessage: (chatId: string, role: 'user' | 'assistant' | 'tool', content: string, references?: ChatReference[], toolCalls?: ToolCallInfo[], tool_call_id?: string) => Promise<void>;
   confirmToolCall: (chatId: string, messageId: string, toolIndex: number) => Promise<void>;
   rejectToolCall: (chatId: string, messageId: string, toolIndex: number) => Promise<void>;
   loadChatHistory: (chatId: string) => Promise<void>;
@@ -481,7 +481,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   // 添加聊天消息
-  addChatMessage: async (chatId, role, content, references, toolCalls) => {
+  addChatMessage: async (chatId, role, content, references, toolCalls, tool_call_id) => {
     const { chatSessions, currentCanvasId } = get();
     if (!currentCanvasId) return;
 
@@ -497,6 +497,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       timestamp: Date.now(),
       references,
       toolCalls,
+      tool_call_id,
     };
 
     // 更新会话

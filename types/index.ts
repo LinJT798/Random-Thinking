@@ -86,7 +86,7 @@ export interface AIResponse {
 }
 
 // 聊天相关类型
-export type ChatRole = 'user' | 'assistant' | 'system';
+export type ChatRole = 'user' | 'assistant' | 'system' | 'tool';
 
 export interface ChatMessage {
   id: string;
@@ -96,6 +96,7 @@ export interface ChatMessage {
   timestamp: number;
   references?: ChatReference[]; // 引用内容（仅用户消息）
   toolCalls?: ToolCallInfo[]; // 工具调用信息（仅助手消息）
+  tool_call_id?: string; // 工具调用ID（仅 tool 消息）
 }
 
 export interface ToolCallInfo {

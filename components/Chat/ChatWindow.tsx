@@ -126,7 +126,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             content: input.content as string,
             position,
             size: { width: 200, height: 200 },
-            color: (input.color as string | undefined) || 'yellow',
+            color: 'yellow', // 固定使用淡黄色
             connections: [],
           });
           createdNodeIds.push(nodeId);
@@ -308,7 +308,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
       // 如果有工具调用，进行第二轮对话
       if (toolCallsList.length > 0) {
-        // 先保存第一轮的 AI 回复（包含工具调用）
+        // 保存第一轮的 AI 回复（包含工具调用）
         await addChatMessage(
           chatId,
           'assistant',
@@ -317,39 +317,42 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           toolCallsList
         );
 
-        // 构建工具结果
-        const toolResults = toolCallsList.map(toolCall => {
+        // 保存 tool 消息到数据库（保持对话格式正确）
+        for (const toolCall of toolCallsList) {
           const toolNames: Record<string, string> = {
             'add_text_node': '文本框',
             'add_sticky_note': '便签',
             'create_mindmap': '思维导图'
           };
 
-          return {
-            tool_use_id: toolCall.tool_use_id,
-            success: true,
-            result: `成功创建${toolNames[toolCall.tool] || '节点'}`,
-            nodeIds: toolCall.nodeIds,
-            nodeCount: toolCall.nodeIds.length
-          };
-        });
+          await addChatMessage(
+            chatId,
+            'tool',
+            `成功创建${toolNames[toolCall.tool] || '节点'}（${toolCall.nodeIds.length} 个节点）`,
+            undefined,
+            undefined,
+            toolCall.tool_use_id
+          );
+        }
 
         // 清空流式消息显示
         setStreamingMessage('');
 
-        // 第二轮：发送工具结果
+        // 第二轮：请求 AI 总结工具执行结果
+        // 此时对话历史格式正确：user → assistant (tool_calls) → tool
         const updatedSession = useCanvasStore.getState().chatSessions.find(s => s.id === chatId);
         const updatedChatMessages = updatedSession?.messages || [];
 
+        // 触发 AI 继续对话，它会看到完整的工具执行历史
+        // 不传 userMessage，让 AI 基于 tool 消息自动生成总结
         const { fullMessage: secondMessage } = await callAIAndProcessStream({
           initialNodes: nodes,
           nodeChanges: null,
           chatHistory: updatedChatMessages,
-          toolResults,
         });
 
         // 保存第二轮的 AI 回复（AI 对工具执行的总结）
-        if (secondMessage) {
+        if (secondMessage && secondMessage.trim()) {
           await addChatMessage(
             chatId,
             'assistant',
@@ -646,7 +649,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           </div>
         )}
 
-        {session.messages.map((msg) => (
+        {session.messages.filter(msg => msg.role !== 'tool').map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}

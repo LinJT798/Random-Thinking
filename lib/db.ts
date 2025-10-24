@@ -31,6 +31,16 @@ export class CanvasDatabase extends Dexie {
       chatMessages: null, // 删除旧表
       chatSessions: 'id, canvasId, createdAt, updatedAt'
     });
+
+    // 升级到版本 4，清空聊天会话（修复工具调用格式）
+    this.version(4).stores({
+      canvases: 'id, name, createdAt, updatedAt',
+      nodes: 'id, type, createdAt, updatedAt, [aiMetadata.source]',
+      chatSessions: 'id, canvasId, createdAt, updatedAt'
+    }).upgrade(tx => {
+      // 清空所有聊天会话（因为旧格式不兼容）
+      return tx.table('chatSessions').clear();
+    });
   }
 
   // 创建新画布

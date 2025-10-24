@@ -10,15 +10,31 @@ interface ChatRequest {
   toolResults?: ToolResult[]; // 工具执行结果（多轮对话）
 }
 
+// OpenAI 兼容的消息类型
+interface OpenAIMessage {
+  role: string;
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_call_id?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
-    const { userMessage, initialNodes, nodeChanges, chatHistory, toolResults } = body;
+    const { userMessage, initialNodes, nodeChanges, chatHistory } = body;
 
-    // 验证：要么有用户消息，要么有工具结果
-    if (!userMessage?.trim() && !toolResults?.length) {
+    // 验证：userMessage 可以为空（用于工具调用后的总结请求）
+    // 但如果为空，chatHistory 必须有内容
+    if (!userMessage?.trim() && chatHistory.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Either userMessage or toolResults is required' }),
+        JSON.stringify({ error: 'userMessage is required for first message' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -32,37 +48,47 @@ export async function POST(request: NextRequest) {
     }
 
     // 构建系统 prompt
-    const systemPrompt = `你是一位深思熟虑的思考者，擅长阅读与理解复杂内容。
-你会仔细分析用户提供的上下文，并基于这些内容展开有深度的思考与讨论。
-你关注逻辑、背景、推理、假设和可能的多种视角，而不是仅仅给出表面答案。
+    const systemPrompt = `角色定位
+你是一位深思熟虑的思考者，与用户共同基于画布内容进行有条理的对话。
+你关注逻辑、结构与前提，而非表层信息。
+你喜欢从底层原理与事物本质出发思考问题，追求洞见的清晰与内在一致性。
+当需要阐明复杂概念或结构关系时，你可以在画布上创建文本、便签或思维导图，以更准确地传达思想。
+你厌恶冗杂与修饰，偏好简洁、精确与必要。
 
-当用户提问或讨论时：
+工作原则
+1. 取材与分析：从画布或对话中筛选核心信息，辨析假设与逻辑链条。
+2. 推理与判断：在有限信息下，给出清晰的推理路径与多种可能性。
 
-你先理解用户当前的研究主题与目的。
+表达风格
 
-结合画布中的信息，分析关键概念、假设与潜在含义。
+语言冷静、克制，不夸张、不渲染。
 
-用有条理的方式回应，展现批判性思考与创造性洞见。
+不使用多余符号（如###、**、>等），只依靠自然段落组织内容。
 
-在必要时引用画布中的相关内容，以保持讨论的连贯性。
+不滥用比喻。若确有助于理解，可使用一次精准而深刻的比喻，但不延展。
 
-鼓励深入探讨，而非匆忙下结论。
+不为形式制造结构感，而让逻辑自然呈现。
 
-表达风格：
+语句力求简洁，避免重复与空洞的修辞。
 
-语气冷静、理性，但富有共鸣。
+在未获用户许可时，不展开冗长的理论阐述或哲学推演。
 
-使用清晰的逻辑结构（例如"首先…其次…最后…"）。
+对复杂问题，允许留白，不以冗长填充不确定性。
 
-避免空洞的赞美或模糊的表述。不要滥用各种符号，尽量使用简练的文本表达；
+工具使用原则
 
-使用简洁、有力的回复，切忌过于冗长，用中文回复。
+可在必要时使用文本框、便签或思维导图等方式呈现信息，帮助用户更清晰地理解逻辑关系。
 
+一切可视化工具的使用必须有实质价值：要么澄清结构，要么总结重点。
 
-- 优先使用文本框(add_text_node)和便签(add_sticky_note)，只在明确需要层级关系时才用思维导图`;
+不以形式吸引注意，不输出无内容的装饰性元素。
+
+工具的作用是辅助理解，而非表现创造力。
+
+若问题可用文字清楚表达，则优先使用文字。`;
 
     // 构建上下文消息
-    const contextMessages: Array<{ role: string; content: string }> = [];
+    const contextMessages: OpenAIMessage[] = [];
 
     // 1. 如果是第一次对话，添加初始画布内容
     const isFirstMessage = chatHistory.length === 0;
@@ -94,7 +120,14 @@ export async function POST(request: NextRequest) {
                 arguments: JSON.stringify(tc.input) // 使用保存的输入参数
               }
             }))
-          } as any);
+          });
+        } else if (msg.role === 'tool') {
+          // tool 消息需要包含 tool_call_id
+          contextMessages.push({
+            role: 'tool',
+            tool_call_id: msg.tool_call_id,
+            content: msg.content
+          });
         } else {
           contextMessages.push({
             role: msg.role,
@@ -122,28 +155,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 4. 工具执行结果（如果有）
-    if (toolResults && toolResults.length > 0) {
-      toolResults.forEach(result => {
-        // 添加工具结果消息（OpenAI 兼容格式）
-        const toolMessage: { role: string; tool_call_id: string; content: string } = {
-          role: 'tool',
-          tool_call_id: result.tool_use_id,
-          content: result.success
-            ? `工具执行成功：${result.result}\n创建了 ${result.nodeCount || result.nodeIds?.length || 0} 个节点。`
-            : `工具执行失败：${result.error || '未知错误'}`
-        };
-        contextMessages.push(toolMessage as { role: string; content: string });
-      });
-    }
+    // 4. 工具执行结果（已经通过历史消息中的 tool 角色处理，这里不再重复添加）
+    // toolResults 参数已废弃，tool 消息直接保存在数据库的 chatHistory 中
 
     // 5. 当前用户消息（如果有）
-    if (userMessage) {
+    if (userMessage && userMessage.trim()) {
       contextMessages.push({
         role: 'user',
         content: userMessage
       });
     }
+
+    // 如果没有新的用户消息，检查最后一条是否是 tool 消息
+    // 如果是，AI 会自动基于 tool 结果继续对话
 
     // 定义工具（Tools）
     const tools = [
@@ -176,18 +200,13 @@ export async function POST(request: NextRequest) {
         type: 'function',
         function: {
           name: 'add_sticky_note',
-          description: '在画布上创建一个彩色便签节点。适用于快速记录想法、临时笔记、提醒事项等场景。',
+          description: '在画布上创建一个便签节点（淡黄色背景）。适用于快速记录想法、临时笔记、提醒事项等场景。',
           parameters: {
             type: 'object',
             properties: {
               content: {
                 type: 'string',
                 description: '便签的内容'
-              },
-              color: {
-                type: 'string',
-                enum: ['yellow', 'pink', 'blue', 'green', 'purple'],
-                description: '便签的颜色，默认为黄色'
               }
             },
             required: ['content']
