@@ -25,11 +25,11 @@ export function CanvasSwitcher() {
     if (currentCanvas) {
       setCanvases(prev => prev.map(c =>
         c.id === currentCanvas.id
-          ? { ...c, nodes: nodes.map(n => ({ id: n.id })) }
+          ? { ...c, nodes }
           : c
       ))
     }
-  }, [nodes.length, currentCanvas?.id])
+  }, [nodes.length, currentCanvas?.id, nodes])
 
   const loadCanvasesList = async () => {
     const allCanvases = await db.getAllCanvases()
