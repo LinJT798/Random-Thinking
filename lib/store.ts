@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { CanvasNode, CanvasData, LayoutType, ChatMessage, ChatReference, ChatSession, ToolCallInfo } from '@/types';
 import { db } from './db';
 import { calculateMindMapLayout, getAllDescendantIds } from './mindmap-layout';
+import { generateUUID } from './uuid';
 
 interface CanvasStore {
   // 当前画布
@@ -386,7 +387,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const { currentCanvasId, nodes, chatSessions } = get();
     if (!currentCanvasId) return '';
 
-    const chatId = crypto.randomUUID();
+    const chatId = generateUUID();
     const timestamp = Date.now();
     const sessionNumber = chatSessions.length + 1;
 
@@ -504,7 +505,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
     // 创建新消息
     const newMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       canvasId: currentCanvasId,
       role,
       content,
@@ -700,7 +701,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
 
     const newReference: ChatReference = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       nodeId,
       content,
       timestamp: Date.now(),

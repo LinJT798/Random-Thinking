@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import type { CanvasData, CanvasNode, ChatSession } from '@/types';
+import { generateUUID } from './uuid';
 
 // 扩展 Dexie 数据库类
 export class CanvasDatabase extends Dexie {
@@ -46,7 +47,7 @@ export class CanvasDatabase extends Dexie {
   // 创建新画布
   async createCanvas(name: string = 'Untitled Canvas'): Promise<string> {
     const canvas: CanvasData = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name,
       nodes: [],
       createdAt: Date.now(),
@@ -79,7 +80,7 @@ export class CanvasDatabase extends Dexie {
   async addNode(canvasId: string, node: Omit<CanvasNode, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const newNode: CanvasNode = {
       ...node,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       createdAt: Date.now(),
       updatedAt: Date.now()
     };

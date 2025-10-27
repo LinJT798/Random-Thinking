@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import type { CanvasData, CanvasNode, ChatSession } from '@/types'
 import type { InsertCanvas, InsertNode, InsertChatSession } from '@/types/database.types'
+import { generateUUID } from './uuid'
 
 /**
  * Supabase 数据库访问层
@@ -116,7 +117,7 @@ export class SupabaseDB {
 
   async createNode(userId: string, canvasId: string, node: Omit<CanvasNode, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const insertData: InsertNode = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       canvas_id: canvasId,
       user_id: userId,
       type: node.type,
