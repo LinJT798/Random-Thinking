@@ -86,8 +86,13 @@ export class CanvasDatabase extends Dexie {
 
     await this.nodes.add(newNode);
 
-    // 更新画布的更新时间
-    await this.updateCanvas(canvasId, {});
+    // 更新画布：添加节点到 nodes 数组
+    const canvas = await this.getCanvas(canvasId);
+    if (canvas) {
+      await this.updateCanvas(canvasId, {
+        nodes: [...canvas.nodes, newNode]
+      });
+    }
 
     return newNode.id;
   }
@@ -103,10 +108,25 @@ export class CanvasDatabase extends Dexie {
 
   // 更新节点
   async updateNode(nodeId: string, updates: Partial<CanvasNode>): Promise<void> {
+    const node = await this.nodes.get(nodeId);
+    if (!node) return;
+
     await this.nodes.update(nodeId, {
       ...updates,
       updatedAt: Date.now()
     });
+
+    // 更新画布中的节点数据
+    const canvases = await this.canvases.toArray();
+    for (const canvas of canvases) {
+      if (canvas.nodes.some(n => n.id === nodeId)) {
+        const updatedNodes = canvas.nodes.map(n =>
+          n.id === nodeId ? { ...n, ...updates, updatedAt: Date.now() } : n
+        );
+        await this.updateCanvas(canvas.id, { nodes: updatedNodes });
+        break;
+      }
+    }
   }
 
   // 删除节点
