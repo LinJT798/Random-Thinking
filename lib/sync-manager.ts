@@ -121,8 +121,12 @@ export class SyncManager {
       }
 
       // 同步节点（批量上传）
+      console.log(`Syncing ${localNodes.length} nodes for canvas ${canvasId}`)
       if (localNodes.length > 0) {
         await supabaseDB.bulkUpsertNodes(this.userId, canvasId, localNodes)
+        console.log(`✅ Successfully synced ${localNodes.length} nodes to cloud`)
+      } else {
+        console.log('No nodes to sync for this canvas')
       }
 
       // 同步聊天会话
