@@ -45,6 +45,17 @@ export default function Home() {
         // 初始化本地数据库
         await initDatabase();
 
+        // 检查本地数据是否属于当前用户
+        const lastUserId = localStorage.getItem('last_user_id');
+        if (lastUserId && lastUserId !== userId) {
+          console.warn('⚠️ Detected user switch, clearing local data...');
+          await indexedDB.deleteDatabase('InfiniteCanvasDB');
+          localStorage.removeItem('offline_sync_queue');
+          await initDatabase();
+          console.log('✅ Local data cleared for new user');
+        }
+        localStorage.setItem('last_user_id', userId);
+
         // 设置同步管理器
         syncManager.setUserId(userId);
         syncManager.setStatusChangeCallback(setSyncStatus);

@@ -68,6 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    // 清空本地数据
+    try {
+      await indexedDB.deleteDatabase('InfiniteCanvasDB')
+      localStorage.removeItem('offline_sync_queue')
+      console.log('✅ Local data cleared on sign out')
+    } catch (error) {
+      console.warn('Failed to clear local data:', error)
+    }
+
     await supabase.auth.signOut()
   }
 
