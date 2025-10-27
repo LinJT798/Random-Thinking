@@ -137,22 +137,36 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   addNode: async (node) => {
     const { currentCanvasId, nodes, history } = get();
     if (!currentCanvasId) {
+      console.error('❌ No canvas selected');
       throw new Error('No canvas selected');
     }
 
-    const nodeId = await db.addNode(currentCanvasId, node);
-    const newNode = await db.nodes.get(nodeId);
+    console.log(`Adding node to canvas ${currentCanvasId}...`);
 
-    if (newNode) {
-      // 保存历史记录
-      set({
-        nodes: [...nodes, newNode],
-        history: [...history, nodes],
-        future: [] // 清空重做历史
-      });
+    try {
+      const nodeId = await db.addNode(currentCanvasId, node);
+      console.log(`✅ Node saved to IndexedDB with ID: ${nodeId}`);
+
+      const newNode = await db.nodes.get(nodeId);
+      console.log('Retrieved node from DB:', newNode ? '✅ Found' : '❌ Not found');
+
+      if (newNode) {
+        // 保存历史记录
+        set({
+          nodes: [...nodes, newNode],
+          history: [...history, nodes],
+          future: [] // 清空重做历史
+        });
+        console.log(`✅ Node added to store. Total nodes: ${nodes.length + 1}`);
+      } else {
+        console.error('❌ Failed to retrieve node from DB after creation');
+      }
+
+      return nodeId;
+    } catch (error) {
+      console.error('❌ Error in addNode:', error);
+      throw error;
     }
-
-    return nodeId;
   },
 
   updateNode: async (nodeId, updates) => {
