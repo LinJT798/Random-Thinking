@@ -114,8 +114,8 @@ export default function AIToolbar({ node }: AIToolbarProps) {
     <div
       className="rounded-lg p-1.5 flex flex-col gap-1.5 animate-in fade-in-0 zoom-in-95 duration-200 glass-effect"
       style={{
-        background: 'rgba(61, 52, 44, 0.5)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
+        background: '#3D342C',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
         transformOrigin: 'top left',
       }}
     >

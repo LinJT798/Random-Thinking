@@ -19,13 +19,13 @@ export default function ChatButton() {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* 主聊天按钮 - 磨砂玻璃效果 */}
+      {/* 主聊天按钮 - 立体边缘效果 */}
       <button
         onClick={handleMainButtonClick}
         className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
         style={{
-          background: 'rgba(237, 228, 213, 0.6)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          background: '#EDE4D5',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
           color: '#3D342C',
         }}
         aria-label="AI 聊天助手"
@@ -62,8 +62,8 @@ export default function ChatButton() {
               }}
               className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium glass-effect"
               style={{
-                background: session.isOpen ? 'rgba(139, 142, 99, 0.75)' : 'rgba(237, 228, 213, 0.6)',
-                border: session.isOpen ? '1px solid rgba(139, 142, 99, 0.8)' : '1px solid rgba(255, 255, 255, 0.2)',
+                background: session.isOpen ? '#8B8E63' : '#EDE4D5',
+                border: session.isOpen ? '1px solid rgba(139, 142, 99, 0.8)' : '1px solid rgba(255, 255, 255, 0.3)',
                 color: session.isOpen ? '#fff' : '#7A6F67',
               }}
               title={session.name}
@@ -79,8 +79,8 @@ export default function ChatButton() {
             }}
             className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
             style={{
-              background: 'rgba(180, 114, 60, 0.75)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
+              background: '#B4723C',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
               color: '#fff',
             }}
             title="创建新聊天"

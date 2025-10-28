@@ -23,8 +23,8 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
           <button
             className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
             style={{
-              background: 'rgba(237, 228, 213, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: '#EDE4D5',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
               color: '#3D342C',
             }}
             aria-label="设置菜单"
@@ -54,8 +54,8 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
           <DropdownMenu.Content
             className="rounded-2xl p-0 w-72 animate-in fade-in-0 zoom-in-95 overflow-hidden glass-effect z-[2100]"
             style={{
-              background: 'rgba(237, 228, 213, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
+              background: '#EDE4D5',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
             }}
             sideOffset={8}
             align="start"

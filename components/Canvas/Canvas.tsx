@@ -258,12 +258,12 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         {nodes.map(renderNode)}
       </div>
 
-      {/* 缩放控制 - 磨砂玻璃效果 */}
+      {/* 缩放控制 - 立体边缘效果 */}
       <div
         className="absolute bottom-6 right-6 flex flex-col gap-1 rounded-xl p-1.5 glass-effect z-[2000]"
         style={{
-          background: 'rgba(237, 228, 213, 0.6)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          background: '#EDE4D5',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
         }}
       >
         <button

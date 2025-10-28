@@ -600,8 +600,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 width: `${dockedWidth}vw`,
                 height: '100vh',
                 zIndex: 1000,
-                background: 'rgba(237, 228, 213, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
+                background: '#EDE4D5',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
               }
             : {
                 // 浮动模式：正常位置
@@ -611,8 +611,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 height: `${session.size.height}px`,
                 cursor: isDragging ? 'grabbing' : 'default',
                 zIndex: 1000,
-                background: 'rgba(237, 228, 213, 0.7)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
+                background: '#EDE4D5',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
               }
         }
         onWheel={(e) => e.stopPropagation()}

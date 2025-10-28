@@ -61,8 +61,8 @@ export default function CanvasToolbar() {
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <button className="w-12 h-12 rounded-2xl transition-all flex items-center justify-center group glass-effect" style={{
-            background: 'rgba(237, 228, 213, 0.6)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: '#EDE4D5',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
           }}>
             <svg className="w-6 h-6 transition-colors" style={{ color: '#3D342C' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -74,8 +74,8 @@ export default function CanvasToolbar() {
           <DropdownMenu.Content
             className="min-w-[200px] rounded-2xl p-2 animate-in fade-in-0 zoom-in-95 glass-effect z-[2100]"
             style={{
-              background: 'rgba(237, 228, 213, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
+              background: '#EDE4D5',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
             }}
             sideOffset={8}
             align="end"

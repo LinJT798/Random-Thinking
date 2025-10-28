@@ -56,30 +56,27 @@ html, body {
   padding: 0;
 }
 
-/* 磨砂玻璃效果 - iOS 风格边缘畸变 */
+/* 立体边缘效果 - 保留阴影，去掉透明 */
 .glass-effect {
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  /* 去掉模糊效果 */
+  /* backdrop-filter: blur(16px) saturate(180%); */
 
-  /* 多层阴影模拟边缘光晕和软化 */
+  /* 保留立体边缘阴影 */
   box-shadow:
-    /* 外层：柔和阴影 */
-    0 8px 32px rgba(61, 52, 44, 0.12),
-    /* 边缘光晕：白色半透明，模拟光线散射 */
-    0 0 0 1px rgba(255, 255, 255, 0.25),
-    0 0 2px 0.5px rgba(255, 255, 255, 0.15),
-    /* 内部高光 */
-    inset 0 1px 1px rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(122, 111, 103, 0.1),
-    /* 轻微彩色边缘（色散效果） */
-    inset -1px 0 0 rgba(139, 142, 99, 0.05),
-    inset 1px 0 0 rgba(198, 200, 170, 0.05);
+    /* 外层：柔和投影 */
+    0 4px 12px rgba(61, 52, 44, 0.08),
+    /* 边缘轮廓 */
+    0 0 0 1px rgba(255, 255, 255, 0.3),
+    /* 内部顶部高光 - 立体感 */
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    /* 内部底部暗影 - 立体感 */
+    inset 0 -1px 0 rgba(122, 111, 103, 0.15);
 
-  /* 顶部和左侧更亮，模拟光源 */
+  /* 顶部光源渐变 - 立体感 */
   background-image: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    transparent 60%
+    180deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    transparent 50%
   );
 }
 

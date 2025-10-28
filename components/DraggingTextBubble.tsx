@@ -36,8 +36,8 @@ export default function DraggingTextBubble() {
       }}
     >
       <div className="rounded-lg px-3 py-2 max-w-xs glass-effect" style={{
-        background: 'rgba(237, 228, 213, 0.7)',
-        border: '1px solid rgba(255, 255, 255, 0.25)',
+        background: '#EDE4D5',
+        border: '1px solid rgba(255, 255, 255, 0.3)',
       }}>
         <div className="flex items-start gap-2">
           <svg
