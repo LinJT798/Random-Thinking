@@ -76,10 +76,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     }
   }, [isEditingTitle]);
 
-  // 自动滚动到最新消息
+  // 自动滚动到最新消息（防止页面滚动）
   useEffect(() => {
     if (session) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
     }
   }, [session, session?.messages, streamingMessage]);
 
@@ -387,7 +391,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       // 可以添加错误提示
     } finally {
       setIsLoading(false);
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }
   };
 
@@ -411,8 +415,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       // 清除拖拽文本
       setDraggingText(null);
 
-      // 聚焦输入框
-      inputRef.current?.focus();
+      // 聚焦输入框（防止页面滚动）
+      inputRef.current?.focus({ preventScroll: true });
     }
   };
 

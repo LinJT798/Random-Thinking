@@ -44,10 +44,16 @@
   --color-sage: #C6C8AA;
 }
 
-body {
+html, body {
   background: var(--color-bg-main);
   color: var(--color-text-primary);
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  margin: 0;
+  padding: 0;
 }
 
 /* 纸质纹理背景 - 增强版 */
