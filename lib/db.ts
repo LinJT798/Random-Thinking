@@ -130,16 +130,45 @@ export class CanvasDatabase extends Dexie {
     }
   }
 
-  // 删除节点
+  // 删除节点（级联删除所有子节点）
   async deleteNode(canvasId: string, nodeId: string): Promise<void> {
-    await this.nodes.delete(nodeId);
+    // 获取要删除的节点
+    const node = await this.nodes.get(nodeId);
+    if (!node) return;
 
-    // 从画布中移除节点引用
+    // 收集所有要删除的节点ID（包括所有后代）
+    const nodesToDelete = await this.getAllDescendants(nodeId);
+    nodesToDelete.push(nodeId); // 包含自己
+
+    console.log(`Deleting node ${nodeId} and ${nodesToDelete.length - 1} descendants`);
+
+    // 批量删除所有节点
+    await this.nodes.bulkDelete(nodesToDelete);
+
+    // 从画布中移除所有节点引用
     const canvas = await this.getCanvas(canvasId);
     if (canvas) {
-      canvas.nodes = canvas.nodes.filter(n => n.id !== nodeId);
+      canvas.nodes = canvas.nodes.filter(n => !nodesToDelete.includes(n.id));
       await this.updateCanvas(canvasId, { nodes: canvas.nodes });
     }
+  }
+
+  // 获取节点的所有后代（递归）
+  private async getAllDescendants(nodeId: string): Promise<string[]> {
+    const node = await this.nodes.get(nodeId);
+    if (!node || !node.childrenIds || node.childrenIds.length === 0) {
+      return [];
+    }
+
+    const descendants: string[] = [];
+
+    for (const childId of node.childrenIds) {
+      descendants.push(childId);
+      const childDescendants = await this.getAllDescendants(childId);
+      descendants.push(...childDescendants);
+    }
+
+    return descendants;
   }
 
   // 删除画布

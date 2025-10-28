@@ -191,11 +191,17 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const { currentCanvasId, nodes, selectedNodeIds, history } = get();
     if (!currentCanvasId) return;
 
+    // 收集所有要删除的节点（包括子节点）
+    const nodesToDelete = getAllDescendantIds(nodes, nodeId);
+    nodesToDelete.push(nodeId); // 包含自己
+
+    console.log(`Deleting ${nodesToDelete.length} nodes (including descendants)`);
+
     await db.deleteNode(currentCanvasId, nodeId);
 
     set({
-      nodes: nodes.filter(node => node.id !== nodeId),
-      selectedNodeIds: selectedNodeIds.filter(id => id !== nodeId),
+      nodes: nodes.filter(node => !nodesToDelete.includes(node.id)),
+      selectedNodeIds: selectedNodeIds.filter(id => !nodesToDelete.includes(id)),
       history: [...history, nodes],
       future: [] // 清空重做历史
     });
