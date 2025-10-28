@@ -54,11 +54,10 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
 
   return (
     <div
-      className="backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 w-[160px] animate-in fade-in-0 zoom-in-95 duration-200"
+      className="rounded-lg p-2 flex flex-col gap-2 w-[160px] animate-in fade-in-0 zoom-in-95 duration-200 glass-effect"
       style={{
-        background: 'rgba(237, 228, 213, 0.95)',
-        boxShadow: '0 4px 12px rgba(61, 52, 44, 0.12)',
-        border: '1px solid rgba(122, 111, 103, 0.2)',
+        background: 'rgba(237, 228, 213, 0.7)',
+        border: '1px solid rgba(255, 255, 255, 0.25)',
         transformOrigin: 'top left',
       }}
       onMouseDown={(e) => e.stopPropagation()}
@@ -148,10 +147,9 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
           <span className="text-xs text-gray-700">选择颜色</span>
         </button>
         {showTextColorPicker && (
-          <div className="absolute top-full left-0 mt-1 rounded-lg p-2 z-50" style={{
-            background: 'rgba(237, 228, 213, 0.98)',
-            boxShadow: '0 4px 12px rgba(61, 52, 44, 0.15)',
-            border: '1px solid rgba(122, 111, 103, 0.2)',
+          <div className="absolute top-full left-0 mt-1 rounded-lg p-2 z-50 glass-effect" style={{
+            background: 'rgba(237, 228, 213, 0.7)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
           }}>
             <div className="grid grid-cols-3 gap-1.5">
               {TEXT_COLORS.map((color) => (
@@ -210,10 +208,9 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
             <span className="text-xs text-gray-700">选择颜色</span>
           </button>
           {showBgColorPicker && (
-            <div className="absolute top-full left-0 mt-1 rounded-lg p-2 z-50" style={{
-            background: 'rgba(237, 228, 213, 0.98)',
-            boxShadow: '0 4px 12px rgba(61, 52, 44, 0.15)',
-            border: '1px solid rgba(122, 111, 103, 0.2)',
+            <div className="absolute top-full left-0 mt-1 rounded-lg p-2 z-50 glass-effect" style={{
+            background: 'rgba(237, 228, 213, 0.7)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
           }}>
               <div className="grid grid-cols-3 gap-1.5">
                 {BG_COLORS.map((color) => (

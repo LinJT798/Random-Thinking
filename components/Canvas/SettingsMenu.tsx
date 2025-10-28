@@ -21,11 +21,10 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
       <DropdownMenu.Root open={open} onOpenChange={setOpen}>
         <DropdownMenu.Trigger asChild>
           <button
-            className="w-10 h-10 flex items-center justify-center backdrop-blur-xl rounded-xl transition-all"
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
             style={{
-              background: 'rgba(237, 228, 213, 0.85)',
-              boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
-              border: '1px solid rgba(122, 111, 103, 0.15)',
+              background: 'rgba(237, 228, 213, 0.6)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
               color: '#3D342C',
             }}
             aria-label="设置菜单"
@@ -53,11 +52,10 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            className="backdrop-blur-xl rounded-2xl p-0 w-72 animate-in fade-in-0 zoom-in-95 overflow-hidden"
+            className="rounded-2xl p-0 w-72 animate-in fade-in-0 zoom-in-95 overflow-hidden glass-effect"
             style={{
-              background: 'rgba(237, 228, 213, 0.95)',
-              boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
-              border: '1px solid rgba(122, 111, 103, 0.2)',
+              background: 'rgba(237, 228, 213, 0.7)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
             }}
             sideOffset={8}
             align="start"

@@ -152,10 +152,9 @@ export function CanvasSwitcher() {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute left-0 mt-2 w-72 rounded-xl z-20 max-h-96 overflow-y-auto backdrop-blur-xl" style={{
-            background: 'rgba(237, 228, 213, 0.98)',
-            boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
-            border: '1px solid rgba(122, 111, 103, 0.2)',
+          <div className="absolute left-0 mt-2 w-72 rounded-xl z-20 max-h-96 overflow-y-auto glass-effect" style={{
+            background: 'rgba(237, 228, 213, 0.7)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
           }}>
             {/* 新建画布按钮 - 焦糖橙 */}
             {!showCreateForm ? (

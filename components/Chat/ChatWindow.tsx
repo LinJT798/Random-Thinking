@@ -583,7 +583,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
       <div
         ref={windowRef}
-        className={`fixed backdrop-blur-xl flex flex-col overflow-hidden ${
+        className={`fixed flex flex-col overflow-hidden glass-effect ${
           // 只在非拖动/调整大小状态下才应用过渡动画
           !isDragging && !isResizing ? 'transition-all duration-300' : ''
         } ${
@@ -600,9 +600,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 width: `${dockedWidth}vw`,
                 height: '100vh',
                 zIndex: 1000,
-                background: 'rgba(237, 228, 213, 0.9)',
-                boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
-                border: '1px solid rgba(122, 111, 103, 0.2)',
+                background: 'rgba(237, 228, 213, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
               }
             : {
                 // 浮动模式：正常位置
@@ -612,9 +611,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 height: `${session.size.height}px`,
                 cursor: isDragging ? 'grabbing' : 'default',
                 zIndex: 1000,
-                background: 'rgba(237, 228, 213, 0.9)',
-                boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
-                border: '1px solid rgba(122, 111, 103, 0.2)',
+                background: 'rgba(237, 228, 213, 0.7)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
               }
         }
         onWheel={(e) => e.stopPropagation()}

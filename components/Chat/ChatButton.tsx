@@ -19,14 +19,13 @@ export default function ChatButton() {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* 主聊天按钮 - 纸感风格 */}
+      {/* 主聊天按钮 - 磨砂玻璃效果 */}
       <button
         onClick={handleMainButtonClick}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-all backdrop-blur-xl"
+        className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
         style={{
-          background: 'rgba(237, 228, 213, 0.85)',
-          boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
-          border: '1px solid rgba(122, 111, 103, 0.15)',
+          background: 'rgba(237, 228, 213, 0.6)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
           color: '#3D342C',
         }}
         aria-label="AI 聊天助手"
@@ -61,11 +60,10 @@ export default function ChatButton() {
                   switchChat(session.id);
                 }
               }}
-              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium backdrop-blur-xl"
+              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium glass-effect"
               style={{
-                background: session.isOpen ? 'rgba(139, 142, 99, 0.9)' : 'rgba(237, 228, 213, 0.85)',
-                boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
-                border: session.isOpen ? '1px solid rgba(139, 142, 99, 1)' : '1px solid rgba(122, 111, 103, 0.15)',
+                background: session.isOpen ? 'rgba(139, 142, 99, 0.75)' : 'rgba(237, 228, 213, 0.6)',
+                border: session.isOpen ? '1px solid rgba(139, 142, 99, 0.8)' : '1px solid rgba(255, 255, 255, 0.2)',
                 color: session.isOpen ? '#fff' : '#7A6F67',
               }}
               title={session.name}
@@ -79,11 +77,10 @@ export default function ChatButton() {
             onClick={() => {
               createChatSession();
             }}
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all backdrop-blur-xl"
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
             style={{
-              background: 'rgba(180, 114, 60, 0.9)',
-              boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
-              border: '1px solid rgba(180, 114, 60, 1)',
+              background: 'rgba(180, 114, 60, 0.75)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
               color: '#fff',
             }}
             title="创建新聊天"
