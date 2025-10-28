@@ -208,7 +208,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative w-full h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300"
+      className="relative w-full h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 paper-texture"
       style={{
         marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
         background: 'linear-gradient(180deg, #F9F6F1 0%, #F3EFE9 100%)',

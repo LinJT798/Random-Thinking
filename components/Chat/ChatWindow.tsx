@@ -579,7 +579,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
       <div
         ref={windowRef}
-        className={`fixed backdrop-blur-xl flex flex-col overflow-hidden ${
+        className={`fixed backdrop-blur-xl flex flex-col overflow-hidden paper-texture-light ${
           // 只在非拖动/调整大小状态下才应用过渡动画
           !isDragging && !isResizing ? 'transition-all duration-300' : ''
         } ${

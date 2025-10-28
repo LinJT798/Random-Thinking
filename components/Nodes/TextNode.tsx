@@ -224,7 +224,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
       onDoubleClick={handleDoubleClick}
     >
       <div
-        className="h-full p-4 rounded-xl transition-all"
+        className="h-full p-4 rounded-xl transition-all paper-texture-light"
         style={{
           backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : (isAIGenerated ? 'rgba(198, 200, 170, 0.15)' : 'rgba(237, 228, 213, 0.7)'),
           boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
