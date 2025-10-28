@@ -72,7 +72,7 @@ export default function CanvasToolbar() {
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            className="min-w-[200px] rounded-2xl p-2 animate-in fade-in-0 zoom-in-95 glass-effect z-[2100]"
+            className="min-w-[200px] rounded-2xl p-2 glass-effect z-[2100] dropdown-animate-in"
             style={{
               background: '#EDE4D5',
               border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -82,7 +82,7 @@ export default function CanvasToolbar() {
           >
             <DropdownMenu.Item
               onClick={handleAddTextNode}
-              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2"
+              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2 stagger-item"
               style={{
                 background: 'linear-gradient(135deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.85) 100%)',
                 boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',
@@ -96,7 +96,7 @@ export default function CanvasToolbar() {
 
             <DropdownMenu.Item
               onClick={handleAddSticky}
-              className="px-4 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2"
+              className="px-4 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2 stagger-item"
               style={{
                 background: 'rgba(251, 191, 36, 0.9)',
                 color: '#3D342C',
@@ -111,7 +111,7 @@ export default function CanvasToolbar() {
 
             <DropdownMenu.Item
               onClick={handleAddMindMap}
-              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none"
+              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none stagger-item"
               style={{
                 background: 'linear-gradient(135deg, rgba(180, 114, 60, 0.9) 0%, rgba(180, 114, 60, 0.8) 100%)',
                 boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',

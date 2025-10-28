@@ -152,7 +152,7 @@ export function CanvasSwitcher() {
             className="fixed inset-0 z-[2050]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute left-0 mt-2 w-72 rounded-xl z-[2100] max-h-96 overflow-y-auto glass-effect" style={{
+          <div className="absolute left-0 mt-2 w-72 rounded-xl z-[2100] max-h-96 overflow-y-auto glass-effect dropdown-animate-in" style={{
             background: '#EDE4D5',
             border: '1px solid rgba(255, 255, 255, 0.3)',
           }}>
@@ -242,11 +242,12 @@ export function CanvasSwitcher() {
                   还没有画布
                 </div>
               ) : (
-                canvases.map((canvas) => (
+                canvases.map((canvas, index) => (
                   <div
                     key={canvas.id}
-                    className="group px-4 py-3 cursor-pointer flex items-center justify-between transition-colors"
+                    className="group px-4 py-3 cursor-pointer flex items-center justify-between transition-colors stagger-item"
                     style={{
+                      animationDelay: `${(index + 1) * 30}ms`,
                       background: currentCanvas?.id === canvas.id ? 'rgba(139, 142, 99, 0.15)' : 'transparent',
                     }}
                     onMouseEnter={(e) => {

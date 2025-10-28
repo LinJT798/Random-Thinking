@@ -48,9 +48,9 @@ export default function ChatButton() {
 
       {/* 展开的聊天列表 */}
       {chatListExpanded && (
-        <div className="flex flex-col gap-1 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+        <div className="flex flex-col gap-1 dropdown-animate-in">
           {/* 现有的聊天会话按钮 - 纸感风格 */}
-          {chatSessions.map((session) => (
+          {chatSessions.map((session, index) => (
             <button
               key={session.id}
               onClick={() => {
@@ -60,11 +60,12 @@ export default function ChatButton() {
                   switchChat(session.id);
                 }
               }}
-              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium glass-effect"
+              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium glass-effect stagger-item"
               style={{
                 background: session.isOpen ? '#8B8E63' : '#EDE4D5',
                 border: session.isOpen ? '1px solid rgba(139, 142, 99, 0.8)' : '1px solid rgba(255, 255, 255, 0.3)',
                 color: session.isOpen ? '#fff' : '#7A6F67',
+                animationDelay: `${index * 30}ms`,
               }}
               title={session.name}
             >
@@ -77,11 +78,12 @@ export default function ChatButton() {
             onClick={() => {
               createChatSession();
             }}
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect stagger-item"
             style={{
               background: '#B4723C',
               border: '1px solid rgba(255, 255, 255, 0.3)',
               color: '#fff',
+              animationDelay: `${chatSessions.length * 30}ms`,
             }}
             title="创建新聊天"
           >
