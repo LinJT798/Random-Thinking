@@ -35,10 +35,15 @@ export default function DraggingTextBubble() {
         top: `${mousePosition.y + 16}px`,
       }}
     >
-      <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg px-3 py-2 border border-blue-200 max-w-xs">
+      <div className="backdrop-blur-sm rounded-lg px-3 py-2 max-w-xs" style={{
+        background: 'rgba(237, 228, 213, 0.95)',
+        boxShadow: '0 8px 24px rgba(61, 52, 44, 0.2)',
+        border: '1px solid rgba(139, 142, 99, 0.3)',
+      }}>
         <div className="flex items-start gap-2">
           <svg
-            className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5"
+            className="w-4 h-4 flex-shrink-0 mt-0.5"
+            style={{ color: '#8B8E63' }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -51,8 +56,8 @@ export default function DraggingTextBubble() {
             />
           </svg>
           <div>
-            <div className="text-xs text-gray-500 font-medium mb-1">点击添加到</div>
-            <div className="text-sm text-gray-900 break-words">{displayText}</div>
+            <div className="text-xs font-medium mb-1" style={{ color: '#7A6F67' }}>点击添加到</div>
+            <div className="text-sm break-words" style={{ color: '#3D342C' }}>{displayText}</div>
           </div>
         </div>
       </div>

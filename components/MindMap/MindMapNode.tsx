@@ -167,7 +167,7 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
       fontSize: `${baseSize}px`,
       padding: `${padding}px ${padding * 1.5}px`,
       fontWeight: currentStyle.fontWeight || 'normal',
-      color: currentStyle.textColor || '#1F2937',
+      color: currentStyle.textColor || '#3D342C', // 深咖色
     };
   };
 
@@ -176,13 +176,15 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
       ref={nodeRef}
       className={`
         absolute select-none
-        ${isSelected ? 'ring-2 ring-indigo-400/50' : ''}
         ${isDragging ? 'opacity-60 cursor-move' : 'cursor-move'}
       `}
       style={{
         left: node.position.x,
         top: node.position.y,
         minWidth: 150,
+        ...(isSelected && {
+          boxShadow: '0 0 0 2px rgba(139, 142, 99, 0.5)',
+        }),
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
@@ -195,7 +197,9 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
         `}
         style={{
           ...getLevelStyle(),
-          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'rgba(255, 255, 255, 0.9)',
+          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'rgba(237, 228, 213, 0.8)',
+          boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+          border: '1px solid rgba(122, 111, 103, 0.15)',
         }}
       >
         {/* 内容 */}
