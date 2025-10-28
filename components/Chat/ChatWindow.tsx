@@ -20,6 +20,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [toolCallStatus, setToolCallStatus] = useState<string>('');
+  const [inputRows, setInputRows] = useState(1); // 输入框行数
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -295,6 +296,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     apiMessage += userMessage;
 
     setInput('');
+    setInputRows(1); // 重置为1行
     setIsLoading(true);
     setStreamingMessage('');
 
@@ -1053,13 +1055,21 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setInput(newValue);
+
+              // 计算行数（通过换行符数量）
+              const lineCount = (newValue.match(/\n/g) || []).length + 1;
+              setInputRows(Math.min(lineCount, 2)); // 最多2行
+            }}
             onKeyDown={handleKeyDown}
             className="flex-1 resize-none rounded-xl px-3 py-2 text-sm focus:outline-none"
             style={{
               background: 'rgba(248, 244, 239, 0.8)',
               border: draggingText ? '1px solid rgba(139, 142, 99, 0.6)' : '1px solid rgba(122, 111, 103, 0.2)',
               color: '#3D342C',
+              overflowY: inputRows >= 2 ? 'auto' : 'hidden', // 2行时启用滚动
               ...(draggingText && {
                 boxShadow: '0 0 0 2px rgba(139, 142, 99, 0.2)',
               }),
@@ -1075,7 +1085,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 e.currentTarget.style.outline = 'none';
               }
             }}
-            rows={2}
+            rows={inputRows}
             disabled={isLoading}
             placeholder={draggingText ? '点击添加为引用...' : ''}
           />
