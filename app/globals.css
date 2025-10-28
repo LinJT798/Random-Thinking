@@ -54,6 +54,15 @@ html, body {
   position: fixed;
   margin: 0;
   padding: 0;
+  /* 阻止触控板手势导航 */
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+}
+
+/* 阻止所有触摸手势 */
+* {
+  overscroll-behavior: none;
 }
 
 /* 立体边缘效果 - 保留阴影，去掉透明 */
