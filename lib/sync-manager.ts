@@ -131,8 +131,14 @@ export class SyncManager {
 
       // 同步聊天会话
       const localChatSessions = await db.getChatSessions(canvasId)
+      console.log(`Syncing ${localChatSessions.length} chat sessions for canvas ${canvasId}`)
       for (const session of localChatSessions) {
-        await supabaseDB.saveChatSession(this.userId, canvasId, session)
+        try {
+          await supabaseDB.saveChatSession(this.userId, canvasId, session)
+        } catch (sessionError) {
+          console.error(`Failed to sync chat session ${session.id}:`, sessionError)
+          // 继续同步其他会话，不中断整个流程
+        }
       }
 
       console.log(`Canvas ${canvasId} synced to cloud`)
