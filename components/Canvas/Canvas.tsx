@@ -222,11 +222,11 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* 点状网格背景 - 暖灰色 */}
+      {/* 点状网格背景 - 暖灰色，更大更明显 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(circle, rgba(122, 111, 103, 0.2) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, rgba(122, 111, 103, 0.35) 1.2px, transparent 1.5px)`,
           backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
           backgroundPosition: `${viewportOffset.x}px ${viewportOffset.y}px`,
         }}

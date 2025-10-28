@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 Important Development Rules
+
+**Git Push Policy**:
+- **NEVER** push code to remote repository unless the user **explicitly** asks you to push
+- Always commit changes locally first
+- Wait for user confirmation before pushing
+- When user says "push" or "push it" or similar explicit request, then you can push
+- This prevents unwanted changes from being published to the remote repository
+
 ## Project Overview
 
 无边记 AI (Infinite Canvas AI) - A web-based infinite canvas note-taking tool with AI capabilities. Inspired by Apple Freeform, this tool helps extend human thinking by providing an unlimited canvas to organize ideas with AI-powered content expansion and summarization.
