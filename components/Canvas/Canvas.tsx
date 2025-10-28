@@ -260,7 +260,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
 
       {/* 缩放控制 - 磨砂玻璃效果 */}
       <div
-        className="absolute bottom-6 right-6 flex flex-col gap-1 rounded-xl p-1.5 glass-effect"
+        className="absolute bottom-6 right-6 flex flex-col gap-1 rounded-xl p-1.5 glass-effect z-[2000]"
         style={{
           background: 'rgba(237, 228, 213, 0.6)',
           border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -311,11 +311,11 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         </button>
       </div>
 
-      {/* 左上角按钮 - 独立定位 */}
-      <div className="absolute top-6 left-6">
+      {/* 左上角按钮 - 独立定位，最高层级 */}
+      <div className="absolute top-6 left-6 z-[2000]">
         <SettingsMenu syncStatus={syncStatus} />
       </div>
-      <div className="absolute top-6 left-20">
+      <div className="absolute top-6 left-20 z-[2000]">
         <ChatButton />
       </div>
 

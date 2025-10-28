@@ -149,10 +149,10 @@ export function CanvasSwitcher() {
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-[2050]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute left-0 mt-2 w-72 rounded-xl z-20 max-h-96 overflow-y-auto glass-effect" style={{
+          <div className="absolute left-0 mt-2 w-72 rounded-xl z-[2100] max-h-96 overflow-y-auto glass-effect" style={{
             background: 'rgba(237, 228, 213, 0.7)',
             border: '1px solid rgba(255, 255, 255, 0.25)',
           }}>

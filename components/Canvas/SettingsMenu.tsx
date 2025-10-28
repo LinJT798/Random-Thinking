@@ -52,7 +52,7 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            className="rounded-2xl p-0 w-72 animate-in fade-in-0 zoom-in-95 overflow-hidden glass-effect"
+            className="rounded-2xl p-0 w-72 animate-in fade-in-0 zoom-in-95 overflow-hidden glass-effect z-[2100]"
             style={{
               background: 'rgba(237, 228, 213, 0.7)',
               border: '1px solid rgba(255, 255, 255, 0.25)',
