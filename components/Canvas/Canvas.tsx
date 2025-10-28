@@ -56,6 +56,26 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
 
+  // 阻止浏览器的后退/前进手势（二指左右滑）
+  useEffect(() => {
+    const preventNavigation = (e: WheelEvent) => {
+      // 检测水平滚动（二指左右滑）
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        // 阻止浏览器的后退/前进导航
+        e.preventDefault();
+      }
+    };
+
+    // 必须使用 { passive: false } 才能调用 preventDefault()
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.addEventListener('wheel', preventNavigation, { passive: false });
+      return () => {
+        canvas.removeEventListener('wheel', preventNavigation);
+      };
+    }
+  }, []);
+
   // 监听焦点节点事件，移动视角
   useEffect(() => {
     const handleFocusNode = (e: CustomEvent) => {
