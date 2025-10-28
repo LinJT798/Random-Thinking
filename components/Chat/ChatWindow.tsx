@@ -579,7 +579,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
       <div
         ref={windowRef}
-        className={`fixed bg-white/90 backdrop-blur-xl shadow-2xl border border-gray-200/50 flex flex-col overflow-hidden ${
+        className={`fixed backdrop-blur-xl flex flex-col overflow-hidden ${
           // 只在非拖动/调整大小状态下才应用过渡动画
           !isDragging && !isResizing ? 'transition-all duration-300' : ''
         } ${
@@ -596,6 +596,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 width: `${dockedWidth}vw`,
                 height: '100vh',
                 zIndex: 1000,
+                background: 'rgba(237, 228, 213, 0.9)',
+                boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
+                border: '1px solid rgba(122, 111, 103, 0.2)',
               }
             : {
                 // 浮动模式：正常位置
@@ -605,19 +608,26 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 height: `${session.size.height}px`,
                 cursor: isDragging ? 'grabbing' : 'default',
                 zIndex: 1000,
+                background: 'rgba(237, 228, 213, 0.9)',
+                boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
+                border: '1px solid rgba(122, 111, 103, 0.2)',
               }
         }
         onWheel={(e) => e.stopPropagation()}
       >
-      {/* 标题栏 */}
+      {/* 标题栏 - 纸感风格 */}
       <div
-        className={`flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-white/50 ${
+        className={`flex items-center justify-between px-4 py-3 ${
           isDocked ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
         }`}
+        style={{
+          borderBottom: '1px solid rgba(122, 111, 103, 0.15)',
+          background: 'rgba(248, 244, 239, 0.5)',
+        }}
         onMouseDown={isDocked ? undefined : handleDragStart}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#8B8E63' }}></div>
           {isEditingTitle ? (
             <input
               ref={titleInputRef}
@@ -626,12 +636,28 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
               onChange={(e) => setTitleInput(e.target.value)}
               onBlur={handleSaveTitle}
               onKeyDown={handleTitleKeyDown}
-              className="flex-1 font-semibold text-gray-900 bg-white/80 border border-blue-400 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 font-semibold rounded px-2 py-0.5 text-sm focus:outline-none"
+              style={{
+                color: '#3D342C',
+                background: 'rgba(248, 244, 239, 0.8)',
+                border: '1px solid rgba(139, 142, 99, 0.4)',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = '1px solid rgba(139, 142, 99, 0.6)';
+                e.currentTarget.style.outlineOffset = '2px';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = 'none';
+                handleSaveTitle(e);
+              }}
               onMouseDown={(e) => e.stopPropagation()}
             />
           ) : (
             <span
-              className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors truncate"
+              className="font-semibold cursor-pointer transition-colors truncate"
+              style={{ color: '#3D342C' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#8B8E63'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#3D342C'}
               onClick={(e) => {
                 e.stopPropagation();
                 handleStartEditTitle();
@@ -644,14 +670,20 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* 固定/取消固定按钮 */}
+          {/* 固定/取消固定按钮 - 橄榄绿配色 */}
           <button
             onClick={() => toggleDockedChat(chatId)}
-            className={`p-1.5 rounded-lg transition-colors ${
-              isDocked
-                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                : 'text-gray-500 hover:bg-gray-100'
-            }`}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{
+              background: isDocked ? 'rgba(139, 142, 99, 0.15)' : 'transparent',
+              color: isDocked ? '#8B8E63' : '#7A6F67',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = isDocked ? 'rgba(139, 142, 99, 0.25)' : 'rgba(122, 111, 103, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = isDocked ? 'rgba(139, 142, 99, 0.15)' : 'transparent';
+            }}
             title={isDocked ? '取消固定' : '固定到左侧'}
           >
             {isDocked ? (
@@ -705,13 +737,17 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`max-w-[80%] flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-              {/* 引用内容（仅用户消息） */}
+              {/* 引用内容（仅用户消息）- 纸感风格 */}
               {msg.role === 'user' && msg.references && msg.references.length > 0 && (
                 <div className="mb-1 space-y-1">
                   {msg.references.map((ref) => (
                     <div
                       key={ref.id}
-                      className="flex items-start gap-1.5 bg-gray-200/80 rounded-lg px-2.5 py-1.5 text-xs text-gray-600"
+                      className="flex items-start gap-1.5 rounded-lg px-2.5 py-1.5 text-xs"
+                      style={{
+                        background: 'rgba(122, 111, 103, 0.15)',
+                        color: '#7A6F67',
+                      }}
                     >
                       <svg className="w-3 h-3 flex-shrink-0 mt-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -753,10 +789,19 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                     return (
                       <div
                         key={index}
-                        className="rounded-2xl border border-blue-200/50 bg-gradient-to-br from-blue-50/80 via-sky-50/80 to-cyan-50/80 shadow-md shadow-blue-100/30 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-blue-200/40 hover:-translate-y-0.5"
+                        className="rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(198, 200, 170, 0.2) 0%, rgba(139, 142, 99, 0.15) 100%)',
+                          border: '1px solid rgba(139, 142, 99, 0.3)',
+                          boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 8px 20px rgba(61, 52, 44, 0.12)'}
+                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(61, 52, 44, 0.08)'}
                       >
-                        {/* 标题栏 */}
-                        <div className="bg-gradient-to-r from-blue-500 to-sky-500 px-4 py-2">
+                        {/* 标题栏 - 橄榄绿渐变 */}
+                        <div className="px-4 py-2" style={{
+                          background: 'linear-gradient(90deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.8) 100%)',
+                        }}>
                           <div className="flex items-center gap-2 text-white">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -771,22 +816,40 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                           <div className="flex items-start gap-3">
                             <div className="text-3xl leading-none">{info.icon}</div>
                             <div className="flex-1">
-                              <div className="text-sm font-semibold text-gray-800">{info.description}</div>
+                              <div className="text-sm font-semibold" style={{ color: '#3D342C' }}>{info.description}</div>
                               {nodeCount > 1 && (
-                                <div className="text-xs text-gray-600 mt-1">
-                                  包含 <span className="font-semibold text-blue-600">{nodeCount}</span> 个节点
+                                <div className="text-xs mt-1" style={{ color: '#7A6F67' }}>
+                                  包含 <span className="font-semibold" style={{ color: '#8B8E63' }}>{nodeCount}</span> 个节点
                                 </div>
                               )}
                             </div>
                           </div>
 
                           {/* 操作按钮 */}
-                          <div className="flex items-center gap-2 pt-2 border-t border-blue-100/50">
+                          <div className="flex items-center gap-2 pt-2" style={{
+                            borderTop: '1px solid rgba(139, 142, 99, 0.15)',
+                          }}>
                             {toolCall.status === 'pending' && (
                               <>
                                 <button
                                   onClick={() => confirmToolCall(chatId, msg.id, index)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-blue-50 border-2 border-blue-300 hover:border-blue-400 text-blue-700 hover:text-blue-800 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow"
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200"
+                                  style={{
+                                    background: 'rgba(248, 244, 239, 0.8)',
+                                    border: '2px solid rgba(139, 142, 99, 0.5)',
+                                    color: '#8B8E63',
+                                    boxShadow: '0 2px 4px rgba(61, 52, 44, 0.05)',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)';
+                                    e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.7)';
+                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(61, 52, 44, 0.08)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(248, 244, 239, 0.8)';
+                                    e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.5)';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(61, 52, 44, 0.05)';
+                                  }}
                                   title="确认保留"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -796,7 +859,23 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                                 </button>
                                 <button
                                   onClick={() => rejectToolCall(chatId, msg.id, index)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-50 border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-800 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow"
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200"
+                                  style={{
+                                    background: 'rgba(248, 244, 239, 0.8)',
+                                    border: '2px solid rgba(122, 111, 103, 0.3)',
+                                    color: '#7A6F67',
+                                    boxShadow: '0 2px 4px rgba(61, 52, 44, 0.05)',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(122, 111, 103, 0.1)';
+                                    e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.5)';
+                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(61, 52, 44, 0.08)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(248, 244, 239, 0.8)';
+                                    e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.3)';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(61, 52, 44, 0.05)';
+                                  }}
                                   title="删除节点"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -807,7 +886,10 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                               </>
                             )}
                             {toolCall.status === 'confirmed' && (
-                              <div className="flex items-center justify-center gap-2 text-blue-700 py-2 px-4 bg-blue-100/50 rounded-xl w-full">
+                              <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl w-full" style={{
+                                color: '#8B8E63',
+                                background: 'rgba(139, 142, 99, 0.15)',
+                              }}>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                                 </svg>
@@ -815,7 +897,10 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                               </div>
                             )}
                             {toolCall.status === 'rejected' && (
-                              <div className="flex items-center justify-center gap-2 text-gray-600 py-2 px-4 bg-gray-100/50 rounded-xl w-full">
+                              <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl w-full" style={{
+                                color: '#7A6F67',
+                                background: 'rgba(122, 111, 103, 0.1)',
+                              }}>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -832,11 +917,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 // 普通消息气泡
                 <>
                   <div
-                    className={`rounded-2xl px-4 py-2 relative ${
-                      msg.role === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-900 select-text cursor-text'
-                    }`}
+                    className="rounded-2xl px-4 py-2 relative select-text cursor-text"
+                    style={{
+                      background: msg.role === 'user'
+                        ? 'linear-gradient(135deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.85) 100%)'
+                        : 'rgba(248, 244, 239, 0.6)',
+                      color: msg.role === 'user' ? '#fff' : '#3D342C',
+                      border: msg.role === 'user' ? '1px solid rgba(139, 142, 99, 1)' : '1px solid rgba(122, 111, 103, 0.15)',
+                    }}
                     onMouseUp={(e) => msg.role === 'assistant' && handleTextSelection(e)}
                   >
                     <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
@@ -846,7 +934,10 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                   {msg.role === 'assistant' && (
                     <button
                       onClick={() => handleAddToCanvas(msg.content)}
-                      className="mt-1 text-xs text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1"
+                      className="mt-1 text-xs transition-colors flex items-center gap-1"
+                      style={{ color: '#7A6F67' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#8B8E63'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#7A6F67'}
                       title="添加到画布"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -863,12 +954,16 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
         {isLoading && !streamingMessage && !toolCallStatus && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gray-100 text-gray-900">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="max-w-[80%] rounded-2xl px-4 py-2" style={{
+              background: 'rgba(248, 244, 239, 0.6)',
+              border: '1px solid rgba(122, 111, 103, 0.15)',
+              color: '#3D342C',
+            }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: '#7A6F67' }}>
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#7A6F67' }}></div>
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#7A6F67', animationDelay: '0.1s' }}></div>
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#7A6F67', animationDelay: '0.2s' }}></div>
                 </div>
                 <span>正在思考</span>
               </div>
@@ -876,11 +971,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           </div>
         )}
 
-        {/* 工具调用状态 */}
+        {/* 工具调用状态 - 橄榄绿配色 */}
         {toolCallStatus && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50">
-              <div className="flex items-center gap-2 text-sm text-blue-700">
+            <div className="max-w-[80%] rounded-2xl px-4 py-2" style={{
+              background: 'linear-gradient(135deg, rgba(198, 200, 170, 0.2) 0%, rgba(139, 142, 99, 0.15) 100%)',
+              border: '1px solid rgba(139, 142, 99, 0.3)',
+            }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: '#8B8E63' }}>
                 <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -902,9 +1000,13 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 输入区域 */}
+      {/* 输入区域 - 纸感风格 */}
       <div
-        className="border-t border-gray-200/50 p-4 bg-white/50 chat-input"
+        className="p-4 chat-input"
+        style={{
+          borderTop: '1px solid rgba(122, 111, 103, 0.15)',
+          background: 'rgba(248, 244, 239, 0.5)',
+        }}
         onClick={handleInputAreaClick}
       >
         {/* 引用内容显示 */}
@@ -913,17 +1015,23 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             {session.references.map((ref) => (
               <div
                 key={ref.id}
-                className="flex items-start gap-2 bg-gray-100 rounded-lg px-3 py-2 text-sm"
+                className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm"
+                style={{
+                  background: 'rgba(122, 111, 103, 0.1)',
+                }}
               >
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 flex-shrink-0 mt-0.5 opacity-60" style={{ color: '#7A6F67' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <div className="flex-1 text-gray-600 line-clamp-2">
+                <div className="flex-1 line-clamp-2" style={{ color: '#7A6F67' }}>
                   {ref.content}
                 </div>
                 <button
                   onClick={() => removeChatReference(chatId, ref.id)}
-                  className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="flex-shrink-0 transition-colors"
+                  style={{ color: '#7A6F67' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#3D342C'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#7A6F67'}
                   title="移除引用"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -941,11 +1049,26 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className={`flex-1 resize-none rounded-xl border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 bg-white ${
-              draggingText
-                ? 'border-blue-400 ring-2 ring-blue-200'
-                : 'border-gray-200 focus:ring-blue-500'
-            }`}
+            className="flex-1 resize-none rounded-xl px-3 py-2 text-sm focus:outline-none"
+            style={{
+              background: 'rgba(248, 244, 239, 0.8)',
+              border: draggingText ? '1px solid rgba(139, 142, 99, 0.6)' : '1px solid rgba(122, 111, 103, 0.2)',
+              color: '#3D342C',
+              ...(draggingText && {
+                boxShadow: '0 0 0 2px rgba(139, 142, 99, 0.2)',
+              }),
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.4)';
+              e.currentTarget.style.outline = '1px solid rgba(139, 142, 99, 0.3)';
+              e.currentTarget.style.outlineOffset = '0';
+            }}
+            onBlur={(e) => {
+              if (!draggingText) {
+                e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.2)';
+                e.currentTarget.style.outline = 'none';
+              }
+            }}
             rows={2}
             disabled={isLoading}
             placeholder={draggingText ? '点击添加为引用...' : ''}
@@ -953,7 +1076,18 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="px-4 py-2 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, rgba(180, 114, 60, 0.9) 0%, rgba(180, 114, 60, 0.8) 100%)',
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading && input.trim()) {
+                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(180, 114, 60, 1) 0%, rgba(196, 129, 76, 0.95) 100%)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(180, 114, 60, 0.9) 0%, rgba(180, 114, 60, 0.8) 100%)';
+            }}
           >
             {isLoading ? (
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

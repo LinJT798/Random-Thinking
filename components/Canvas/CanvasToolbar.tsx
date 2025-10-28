@@ -60,8 +60,12 @@ export default function CanvasToolbar() {
     <div className="absolute top-6 right-6">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button className="w-12 h-12 bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 hover:bg-white/90 transition-all flex items-center justify-center group">
-            <svg className="w-6 h-6 text-gray-700 group-hover:text-gray-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button className="w-12 h-12 backdrop-blur-xl rounded-2xl transition-all flex items-center justify-center group" style={{
+            background: 'rgba(237, 228, 213, 0.85)',
+            boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+            border: '1px solid rgba(122, 111, 103, 0.15)',
+          }}>
+            <svg className="w-6 h-6 transition-colors" style={{ color: '#3D342C' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
@@ -69,13 +73,22 @@ export default function CanvasToolbar() {
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            className="min-w-[200px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 p-2 animate-in fade-in-0 zoom-in-95"
+            className="min-w-[200px] backdrop-blur-xl rounded-2xl p-2 animate-in fade-in-0 zoom-in-95"
+            style={{
+              background: 'rgba(237, 228, 213, 0.95)',
+              boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
+              border: '1px solid rgba(122, 111, 103, 0.2)',
+            }}
             sideOffset={8}
             align="end"
           >
             <DropdownMenu.Item
               onClick={handleAddTextNode}
-              className="px-4 py-2.5 bg-blue-500/90 text-white rounded-xl hover:bg-blue-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm cursor-pointer outline-none mb-2"
+              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2"
+              style={{
+                background: 'linear-gradient(135deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.85) 100%)',
+                boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',
+              }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -85,7 +98,12 @@ export default function CanvasToolbar() {
 
             <DropdownMenu.Item
               onClick={handleAddSticky}
-              className="px-4 py-2.5 bg-yellow-400/90 text-gray-800 rounded-xl hover:bg-yellow-500 transition-all text-sm flex items-center gap-2 font-medium shadow-sm cursor-pointer outline-none mb-2"
+              className="px-4 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2"
+              style={{
+                background: 'rgba(251, 191, 36, 0.9)',
+                color: '#3D342C',
+                boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',
+              }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -95,7 +113,11 @@ export default function CanvasToolbar() {
 
             <DropdownMenu.Item
               onClick={handleAddMindMap}
-              className="px-4 py-2.5 bg-indigo-500/90 text-white rounded-xl hover:bg-indigo-600 transition-all text-sm flex items-center gap-2 font-medium shadow-sm cursor-pointer outline-none"
+              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none"
+              style={{
+                background: 'linear-gradient(135deg, rgba(180, 114, 60, 0.9) 0%, rgba(180, 114, 60, 0.8) 100%)',
+                boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',
+              }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />

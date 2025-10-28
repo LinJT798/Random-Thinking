@@ -112,14 +112,30 @@ export default function AIToolbar({ node }: AIToolbarProps) {
 
   return (
     <div
-      className="bg-gray-800/60 backdrop-blur-sm rounded-lg shadow-lg p-1.5 flex flex-col gap-1.5 animate-in fade-in-0 zoom-in-95 duration-200"
-      style={{ transformOrigin: 'top left' }}
+      className="backdrop-blur-sm rounded-lg p-1.5 flex flex-col gap-1.5 animate-in fade-in-0 zoom-in-95 duration-200"
+      style={{
+        background: 'rgba(61, 52, 44, 0.6)',
+        boxShadow: '0 4px 12px rgba(61, 52, 44, 0.15)',
+        transformOrigin: 'top left',
+      }}
     >
       {hasOpenChats && (
         <button
           onClick={handleAddTo}
           disabled={isProcessing}
-          className="bg-green-500/20 hover:bg-green-500/30 text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium transition-all border border-green-400/30"
+          className="text-white px-2.5 py-1 rounded text-[10px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 font-medium transition-all"
+          style={{
+            background: 'rgba(139, 142, 99, 0.3)',
+            border: '1px solid rgba(139, 142, 99, 0.4)',
+          }}
+          onMouseEnter={(e) => {
+            if (!isProcessing) {
+              e.currentTarget.style.background = 'rgba(139, 142, 99, 0.4)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(139, 142, 99, 0.3)';
+          }}
           title="添加到聊天引用"
         >
           <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,7 +146,11 @@ export default function AIToolbar({ node }: AIToolbarProps) {
       )}
 
       {error && (
-        <div className="bg-red-500/20 text-red-200 px-2.5 py-1 rounded text-[10px] font-medium border border-red-400/30">
+        <div className="px-2.5 py-1 rounded text-[10px] font-medium" style={{
+          background: 'rgba(220, 38, 38, 0.2)',
+          color: '#FCA5A5',
+          border: '1px solid rgba(220, 38, 38, 0.3)',
+        }}>
           {error}
         </div>
       )}

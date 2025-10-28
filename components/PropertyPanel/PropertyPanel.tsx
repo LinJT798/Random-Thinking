@@ -54,15 +54,20 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
 
   return (
     <div
-      className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-2 flex flex-col gap-2 w-[160px] animate-in fade-in-0 zoom-in-95 duration-200"
-      style={{ transformOrigin: 'top left' }}
+      className="backdrop-blur-sm rounded-lg p-2 flex flex-col gap-2 w-[160px] animate-in fade-in-0 zoom-in-95 duration-200"
+      style={{
+        background: 'rgba(237, 228, 213, 0.95)',
+        boxShadow: '0 4px 12px rgba(61, 52, 44, 0.12)',
+        border: '1px solid rgba(122, 111, 103, 0.2)',
+        transformOrigin: 'top left',
+      }}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* 字体大小 */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-gray-600 font-medium">字体大小</label>
+        <label className="text-xs font-medium" style={{ color: '#7A6F67' }}>字体大小</label>
         <input
           type="number"
           min="8"
@@ -75,36 +80,48 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
             }
           }}
           onKeyDown={(e) => e.stopPropagation()}
-          className="w-full px-3 py-1.5 text-sm text-gray-900 rounded border border-gray-300 hover:border-blue-400 focus:border-blue-500 focus:outline-none transition-colors"
+          className="w-full px-3 py-1.5 text-sm rounded transition-colors focus:outline-none"
+          style={{
+            background: 'rgba(248, 244, 239, 0.8)',
+            border: '1px solid rgba(122, 111, 103, 0.2)',
+            color: '#3D342C',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.5)';
+            e.currentTarget.style.outline = '1px solid rgba(139, 142, 99, 0.3)';
+            e.currentTarget.style.outlineOffset = '0';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.2)';
+            e.currentTarget.style.outline = 'none';
+          }}
           placeholder="字体大小 (8-72)"
         />
       </div>
 
       {/* 字体粗细 */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs text-gray-600 font-medium">字体粗细</label>
+        <label className="text-xs font-medium" style={{ color: '#7A6F67' }}>字体粗细</label>
         <div className="flex gap-1">
           <button
             onClick={() => updateStyle({ fontWeight: 'normal' })}
-            className={`
-              flex-1 px-3 py-1.5 text-xs rounded border transition-all
-              ${fontWeight === 'normal'
-                ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-              }
-            `}
+            className="flex-1 px-3 py-1.5 text-xs rounded transition-all"
+            style={{
+              background: fontWeight === 'normal' ? 'rgba(139, 142, 99, 0.9)' : 'rgba(248, 244, 239, 0.8)',
+              color: fontWeight === 'normal' ? '#fff' : '#3D342C',
+              border: fontWeight === 'normal' ? '1px solid rgba(139, 142, 99, 1)' : '1px solid rgba(122, 111, 103, 0.2)',
+            }}
           >
             正常
           </button>
           <button
             onClick={() => updateStyle({ fontWeight: 'bold' })}
-            className={`
-              flex-1 px-3 py-1.5 text-xs font-bold rounded border transition-all
-              ${fontWeight === 'bold'
-                ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-              }
-            `}
+            className="flex-1 px-3 py-1.5 text-xs font-bold rounded transition-all"
+            style={{
+              background: fontWeight === 'bold' ? 'rgba(139, 142, 99, 0.9)' : 'rgba(248, 244, 239, 0.8)',
+              color: fontWeight === 'bold' ? '#fff' : '#3D342C',
+              border: fontWeight === 'bold' ? '1px solid rgba(139, 142, 99, 1)' : '1px solid rgba(122, 111, 103, 0.2)',
+            }}
           >
             加粗
           </button>
@@ -113,10 +130,16 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
 
       {/* 文字颜色 */}
       <div className="flex flex-col gap-1 relative">
-        <label className="text-xs text-gray-600 font-medium">文字颜色</label>
+        <label className="text-xs font-medium" style={{ color: '#7A6F67' }}>文字颜色</label>
         <button
           onClick={() => setShowTextColorPicker(!showTextColorPicker)}
-          className="w-full flex items-center gap-2 px-3 py-1.5 rounded border border-gray-300 hover:border-blue-400 bg-white transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-1.5 rounded transition-colors"
+          style={{
+            background: 'rgba(248, 244, 239, 0.8)',
+            border: '1px solid rgba(122, 111, 103, 0.2)',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.4)'}
+          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.2)'}
         >
           <div
             className="w-4 h-4 rounded border border-gray-300"
@@ -125,7 +148,11 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
           <span className="text-xs text-gray-700">选择颜色</span>
         </button>
         {showTextColorPicker && (
-          <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-50">
+          <div className="absolute top-full left-0 mt-1 rounded-lg p-2 z-50" style={{
+            background: 'rgba(237, 228, 213, 0.98)',
+            boxShadow: '0 4px 12px rgba(61, 52, 44, 0.15)',
+            border: '1px solid rgba(122, 111, 103, 0.2)',
+          }}>
             <div className="grid grid-cols-3 gap-1.5">
               {TEXT_COLORS.map((color) => (
                 <button
@@ -134,16 +161,20 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
                     updateStyle({ textColor: color.value });
                     setShowTextColorPicker(false);
                   }}
-                  className="group flex flex-col items-center gap-1 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                  className="group flex flex-col items-center gap-1 p-1.5 rounded transition-colors"
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(122, 111, 103, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   title={color.name}
                 >
                   <div
-                    className={`w-6 h-6 rounded border-2 transition-all ${
-                      textColor === color.value ? 'border-blue-500 scale-110' : 'border-gray-300'
-                    }`}
-                    style={{ backgroundColor: color.value }}
+                    className="w-6 h-6 rounded transition-all"
+                    style={{
+                      backgroundColor: color.value,
+                      border: textColor === color.value ? '2px solid rgba(139, 142, 99, 1)' : '2px solid rgba(122, 111, 103, 0.3)',
+                      transform: textColor === color.value ? 'scale(1.1)' : 'scale(1)',
+                    }}
                   />
-                  <span className="text-[10px] text-gray-600">{color.name}</span>
+                  <span className="text-[10px]" style={{ color: '#7A6F67' }}>{color.name}</span>
                 </button>
               ))}
             </div>
@@ -154,10 +185,16 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
       {/* 背景颜色 - 只在允许时显示 */}
       {showBackgroundColor && (
         <div className="flex flex-col gap-1 relative">
-          <label className="text-xs text-gray-600 font-medium">背景颜色</label>
+          <label className="text-xs font-medium" style={{ color: '#7A6F67' }}>背景颜色</label>
           <button
             onClick={() => setShowBgColorPicker(!showBgColorPicker)}
-            className="w-full flex items-center gap-2 px-3 py-1.5 rounded border border-gray-300 hover:border-blue-400 bg-white transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded transition-colors"
+            style={{
+              background: 'rgba(248, 244, 239, 0.8)',
+              border: '1px solid rgba(122, 111, 103, 0.2)',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.4)'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.2)'}
           >
             <div
               className="w-4 h-4 rounded border border-gray-300"
@@ -173,7 +210,11 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
             <span className="text-xs text-gray-700">选择颜色</span>
           </button>
           {showBgColorPicker && (
-            <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-50">
+            <div className="absolute top-full left-0 mt-1 rounded-lg p-2 z-50" style={{
+            background: 'rgba(237, 228, 213, 0.98)',
+            boxShadow: '0 4px 12px rgba(61, 52, 44, 0.15)',
+            border: '1px solid rgba(122, 111, 103, 0.2)',
+          }}>
               <div className="grid grid-cols-3 gap-1.5">
                 {BG_COLORS.map((color) => (
                   <button
@@ -182,7 +223,9 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
                       updateStyle({ backgroundColor: color.value });
                       setShowBgColorPicker(false);
                     }}
-                    className="group flex flex-col items-center gap-1 p-1.5 rounded hover:bg-gray-100 transition-colors"
+                    className="group flex flex-col items-center gap-1 p-1.5 rounded transition-colors"
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(122, 111, 103, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     title={color.name}
                   >
                     <div

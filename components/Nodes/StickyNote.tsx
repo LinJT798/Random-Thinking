@@ -202,7 +202,7 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
   const textStyle = {
     fontSize: currentStyle.fontSize ? `${currentStyle.fontSize}px` : '14px',
     fontWeight: currentStyle.fontWeight || 'normal',
-    color: currentStyle.textColor || '#000000',
+    color: currentStyle.textColor || '#3D342C', // 深咖色
   };
 
   return (
@@ -210,7 +210,6 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
       ref={nodeRef}
       className={`
         absolute select-none p-4
-        ${isSelected ? 'ring-2 ring-blue-500' : ''}
         ${isDragging ? 'opacity-70 cursor-move' : 'cursor-move'}
         ${isResizing ? 'cursor-nwse-resize' : ''}
       `}
@@ -223,6 +222,9 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         backgroundSize: '100% 100%',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
+        ...(isSelected && {
+          boxShadow: '0 0 0 2px rgba(139, 142, 99, 0.5)',
+        }),
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
@@ -269,10 +271,15 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         </div>
       )}
 
-      {/* 调整大小手柄 */}
+      {/* 调整大小手柄 - 橄榄绿配色 */}
       {isSelected && !isEditing && (
         <div
-          className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-400/50 rounded-full cursor-nwse-resize hover:bg-blue-500/70 transition-colors z-10"
+          className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full cursor-nwse-resize transition-colors z-10"
+          style={{
+            background: 'rgba(139, 142, 99, 0.5)',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.7)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.5)'}
           onMouseDown={handleResizeStart}
         />
       )}
