@@ -122,18 +122,25 @@ export function CanvasSwitcher() {
 
   return (
     <div className="relative">
-      {/* 当前画布显示 */}
+      {/* 当前画布显示 - 纸感风格 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors shadow-sm"
+        className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+        style={{
+          background: 'rgba(248, 244, 239, 0.8)',
+          border: '1px solid rgba(122, 111, 103, 0.2)',
+          boxShadow: '0 2px 4px rgba(61, 52, 44, 0.05)',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(248, 244, 239, 1)'}
+        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(248, 244, 239, 0.8)'}
       >
-        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" style={{ color: '#7A6F67' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium" style={{ color: '#3D342C' }}>
           {currentCanvas?.name || '选择画布'}
         </span>
-        <svg className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} style={{ color: '#7A6F67' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -145,27 +152,51 @@ export function CanvasSwitcher() {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute left-0 mt-2 w-72 bg-white rounded-md shadow-lg border border-gray-200 z-20 max-h-96 overflow-y-auto">
-            {/* 新建画布按钮 */}
+          <div className="absolute left-0 mt-2 w-72 rounded-xl z-20 max-h-96 overflow-y-auto backdrop-blur-xl" style={{
+            background: 'rgba(237, 228, 213, 0.98)',
+            boxShadow: '0 8px 24px rgba(61, 52, 44, 0.12)',
+            border: '1px solid rgba(122, 111, 103, 0.2)',
+          }}>
+            {/* 新建画布按钮 - 焦糖橙 */}
             {!showCreateForm ? (
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 text-blue-600 border-b border-gray-100"
+                className="w-full px-4 py-3 text-left flex items-center space-x-2 font-medium transition-colors rounded-t-xl"
+                style={{
+                  color: '#B4723C',
+                  borderBottom: '1px solid rgba(122, 111, 103, 0.15)',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(180, 114, 60, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="font-medium">新建画布</span>
+                <span>新建画布</span>
               </button>
             ) : (
-              <div className="p-3 border-b border-gray-100">
+              <div className="p-3" style={{ borderBottom: '1px solid rgba(122, 111, 103, 0.15)' }}>
                 <input
                   type="text"
                   value={newCanvasName}
                   onChange={(e) => setNewCanvasName(e.target.value)}
                   placeholder="画布名称"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2"
+                  className="w-full px-3 py-2 rounded-lg text-sm mb-2 focus:outline-none"
+                  style={{
+                    background: 'rgba(248, 244, 239, 0.8)',
+                    border: '1px solid rgba(122, 111, 103, 0.2)',
+                    color: '#3D342C',
+                  }}
                   autoFocus
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.5)';
+                    e.currentTarget.style.outline = '1px solid rgba(139, 142, 99, 0.3)';
+                    e.currentTarget.style.outlineOffset = '0';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.2)';
+                    e.currentTarget.style.outline = 'none';
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCreateCanvas()
                     if (e.key === 'Escape') {
@@ -177,7 +208,12 @@ export function CanvasSwitcher() {
                 <div className="flex space-x-2">
                   <button
                     onClick={handleCreateCanvas}
-                    className="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                    className="flex-1 px-3 py-1.5 text-white rounded-lg text-sm transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(180, 114, 60, 0.9) 0%, rgba(180, 114, 60, 0.8) 100%)',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(135deg, rgba(180, 114, 60, 1) 0%, rgba(196, 129, 76, 0.95) 100%)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(135deg, rgba(180, 114, 60, 0.9) 0%, rgba(180, 114, 60, 0.8) 100%)'}
                   >
                     创建
                   </button>
@@ -186,7 +222,13 @@ export function CanvasSwitcher() {
                       setShowCreateForm(false)
                       setNewCanvasName('')
                     }}
-                    className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                    className="flex-1 px-3 py-1.5 rounded-lg text-sm transition-all"
+                    style={{
+                      background: 'rgba(122, 111, 103, 0.1)',
+                      color: '#7A6F67',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(122, 111, 103, 0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(122, 111, 103, 0.1)'}
                   >
                     取消
                   </button>
@@ -197,37 +239,53 @@ export function CanvasSwitcher() {
             {/* 画布列表 */}
             <div className="py-1">
               {canvases.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                <div className="px-4 py-3 text-sm text-center" style={{ color: '#7A6F67' }}>
                   还没有画布
                 </div>
               ) : (
                 canvases.map((canvas) => (
                   <div
                     key={canvas.id}
-                    className={`group px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between ${
-                      currentCanvas?.id === canvas.id ? 'bg-blue-50' : ''
-                    }`}
+                    className="group px-4 py-3 cursor-pointer flex items-center justify-between transition-colors"
+                    style={{
+                      background: currentCanvas?.id === canvas.id ? 'rgba(139, 142, 99, 0.15)' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentCanvas?.id !== canvas.id) {
+                        e.currentTarget.style.background = 'rgba(122, 111, 103, 0.08)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentCanvas?.id !== canvas.id) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
                     onClick={() => handleSwitchCanvas(canvas.id)}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#7A6F67' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span className={`text-sm truncate ${currentCanvas?.id === canvas.id ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
+                        <span className={`text-sm truncate ${currentCanvas?.id === canvas.id ? 'font-medium' : ''}`} style={{
+                          color: currentCanvas?.id === canvas.id ? '#8B8E63' : '#3D342C',
+                        }}>
                           {canvas.name}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5 ml-6">
+                      <div className="text-xs mt-0.5 ml-6" style={{ color: '#7A6F67' }}>
                         {canvas.nodes.length} 个节点
                       </div>
                     </div>
                     <button
                       onClick={(e) => handleDeleteCanvas(canvas.id, e)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
+                      style={{ color: '#DC2626' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       title="删除画布"
                     >
-                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
