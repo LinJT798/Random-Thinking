@@ -208,9 +208,10 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative w-full h-screen overflow-hidden bg-white cursor-grab active:cursor-grabbing transition-all duration-300"
+      className="relative w-full h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300"
       style={{
         marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
+        background: 'linear-gradient(180deg, #F9F6F1 0%, #F3EFE9 100%)',
       }}
       onClick={handleCanvasClick}
       onDoubleClick={handleCanvasDoubleClick}
@@ -220,13 +221,13 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* 网格背景 */}
+      {/* 网格背景 - 暖灰色 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(to right, #f3f4f6 0.5px, transparent 0.5px),
-            linear-gradient(to bottom, #f3f4f6 0.5px, transparent 0.5px)
+            linear-gradient(to right, rgba(122, 111, 103, 0.08) 0.5px, transparent 0.5px),
+            linear-gradient(to bottom, rgba(122, 111, 103, 0.08) 0.5px, transparent 0.5px)
           `,
           backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
           backgroundPosition: `${viewportOffset.x}px ${viewportOffset.y}px`,
@@ -259,36 +260,52 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         {nodes.map(renderNode)}
       </div>
 
-      {/* 缩放控制 */}
-      <div className="absolute bottom-6 right-6 flex flex-col gap-1 bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-1.5">
+      {/* 缩放控制 - 纸感风格 */}
+      <div
+        className="absolute bottom-6 right-6 flex flex-col gap-1 backdrop-blur-xl rounded-xl p-1.5"
+        style={{
+          background: 'rgba(237, 228, 213, 0.85)',
+          boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+          border: '1px solid rgba(122, 111, 103, 0.15)',
+        }}
+      >
         <button
           onClick={() => setZoom(prev => Math.min(3, prev + 0.1))}
-          className="w-9 h-9 flex items-center justify-center hover:bg-gray-100/80 rounded-xl transition-all text-gray-700 font-medium"
+          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium"
+          style={{ color: '#3D342C' }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="放大 (Ctrl + 滚轮)"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </button>
-        <div className="text-center text-xs text-gray-500 px-2 py-1 font-medium">
+        <div className="text-center text-xs px-2 py-1 font-medium" style={{ color: '#7A6F67' }}>
           {Math.round(zoom * 100)}%
         </div>
         <button
           onClick={() => setZoom(prev => Math.max(0.1, prev - 0.1))}
-          className="w-9 h-9 flex items-center justify-center hover:bg-gray-100/80 rounded-xl transition-all text-gray-700 font-medium"
+          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium"
+          style={{ color: '#3D342C' }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="缩小 (Ctrl + 滚轮)"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
           </svg>
         </button>
-        <div className="border-t border-gray-200/50 my-0.5" />
+        <div style={{ borderTop: '1px solid rgba(122, 111, 103, 0.2)', margin: '2px 0' }} />
         <button
           onClick={() => {
             setZoom(1);
             setViewportOffset({ x: 0, y: 0 });
           }}
-          className="w-9 h-9 flex items-center justify-center hover:bg-gray-100/80 rounded-xl transition-all text-gray-600"
+          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all"
+          style={{ color: '#7A6F67' }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="重置视图"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

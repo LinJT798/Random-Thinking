@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
+/* 🎨 自然纸感配色方案 - Organic Paper Theme */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 主背景色 - 浅米白 */
+  --color-bg-main: #F8F4EF;
+  --color-bg-secondary: #EDE4D5;
+
+  /* 文字色 - 深咖啡 */
+  --color-text-primary: #3D342C;
+  --color-text-secondary: #7A6F67;
+
+  /* 强调色 */
+  --color-accent: #8B8E63;
+  --color-accent-secondary: #B4723C;
+  --color-highlight: #C6C8AA;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* 背景色系统 */
+  --color-bg-canvas: var(--color-bg-main);
+  --color-bg-paper: var(--color-bg-secondary);
+
+  /* 文字色系统 */
+  --color-text-coffee: var(--color-text-primary);
+  --color-text-taupe: var(--color-text-secondary);
+
+  /* 交互色系统 */
+  --color-olive: var(--color-accent);
+  --color-caramel: var(--color-accent-secondary);
+  --color-sage: var(--color-highlight);
+
+  /* 字体 */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* 自定义颜色 - Tailwind 可直接使用 */
+  --color-warm-ivory: #F8F4EF;
+  --color-parchment: #EDE4D5;
+  --color-coffee-brown: #3D342C;
+  --color-taupe-gray: #7A6F67;
+  --color-olive-mist: #8B8E63;
+  --color-caramel-clay: #B4723C;
+  --color-sage: #C6C8AA;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 纸质纹理背景（可选） */
+.paper-texture {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(61, 52, 44, 0.01) 2px,
+      rgba(61, 52, 44, 0.01) 4px
+    );
 }

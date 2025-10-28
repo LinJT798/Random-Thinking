@@ -19,10 +19,16 @@ export default function ChatButton() {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* 主聊天按钮 */}
+      {/* 主聊天按钮 - 纸感风格 */}
       <button
         onClick={handleMainButtonClick}
-        className="w-10 h-10 flex items-center justify-center rounded-xl shadow-sm border transition-all bg-white/70 backdrop-blur-xl border-gray-200/50 text-gray-600 hover:bg-white/90"
+        className="w-10 h-10 flex items-center justify-center rounded-xl transition-all backdrop-blur-xl"
+        style={{
+          background: 'rgba(237, 228, 213, 0.85)',
+          boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+          border: '1px solid rgba(122, 111, 103, 0.15)',
+          color: '#3D342C',
+        }}
         aria-label="AI 聊天助手"
         title="AI 聊天助手"
       >
@@ -44,7 +50,7 @@ export default function ChatButton() {
       {/* 展开的聊天列表 */}
       {chatListExpanded && (
         <div className="flex flex-col gap-1 animate-in fade-in-0 slide-in-from-top-2 duration-200">
-          {/* 现有的聊天会话按钮 */}
+          {/* 现有的聊天会话按钮 - 纸感风格 */}
           {chatSessions.map((session) => (
             <button
               key={session.id}
@@ -55,23 +61,31 @@ export default function ChatButton() {
                   switchChat(session.id);
                 }
               }}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-sm border transition-all text-sm font-medium ${
-                session.isOpen
-                  ? 'bg-blue-400 border-blue-500 text-white'
-                  : 'bg-white/70 backdrop-blur-xl border-gray-200/50 text-gray-600 hover:bg-white/90'
-              }`}
+              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium backdrop-blur-xl"
+              style={{
+                background: session.isOpen ? 'rgba(139, 142, 99, 0.9)' : 'rgba(237, 228, 213, 0.85)',
+                boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+                border: session.isOpen ? '1px solid rgba(139, 142, 99, 1)' : '1px solid rgba(122, 111, 103, 0.15)',
+                color: session.isOpen ? '#fff' : '#7A6F67',
+              }}
               title={session.name}
             >
               {session.name.charAt(0)}
             </button>
           ))}
 
-          {/* 添加新聊天按钮（+号，始终在最下面） */}
+          {/* 添加新聊天按钮 - 焦糖橙 */}
           <button
             onClick={() => {
               createChatSession();
             }}
-            className="w-10 h-10 flex items-center justify-center rounded-xl shadow-sm border transition-all bg-green-500/90 border-green-600 text-white hover:bg-green-600"
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all backdrop-blur-xl"
+            style={{
+              background: 'rgba(180, 114, 60, 0.9)',
+              boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
+              border: '1px solid rgba(180, 114, 60, 1)',
+              color: '#fff',
+            }}
             title="创建新聊天"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
