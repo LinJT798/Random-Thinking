@@ -192,7 +192,7 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
       <div
         className={`
           backdrop-blur-sm rounded-lg shadow-md
-          hover:shadow-lg transition-all paper-texture-light
+          hover:shadow-lg transition-all
           ${level === 0 ? 'font-semibold' : ''}
         `}
         style={{

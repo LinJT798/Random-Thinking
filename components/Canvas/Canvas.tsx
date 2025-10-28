@@ -208,7 +208,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 paper-texture"
+      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300"
       style={{
         marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
         width: dockedChatId ? `${100 - dockedWidth}vw` : '100%',
@@ -222,14 +222,11 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      {/* 网格背景 - 暖灰色 */}
+      {/* 点状网格背景 - 暖灰色 */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(122, 111, 103, 0.08) 0.5px, transparent 0.5px),
-            linear-gradient(to bottom, rgba(122, 111, 103, 0.08) 0.5px, transparent 0.5px)
-          `,
+          backgroundImage: `radial-gradient(circle, rgba(122, 111, 103, 0.2) 1px, transparent 1px)`,
           backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
           backgroundPosition: `${viewportOffset.x}px ${viewportOffset.y}px`,
         }}
