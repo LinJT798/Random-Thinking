@@ -121,11 +121,31 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (canvas) {
         const nodes = await db.getCanvasNodes(canvasId);
         const chatSessions = await db.getChatSessions(canvasId);
+
+        // 从 localStorage 恢复分屏状态
+        let dockedChatId = null;
+        let dockedWidth = 40;
+        if (typeof window !== 'undefined') {
+          const savedState = localStorage.getItem(`canvas_${canvasId}_docked_state`);
+          if (savedState) {
+            try {
+              const parsed = JSON.parse(savedState);
+              dockedChatId = parsed.dockedChatId;
+              dockedWidth = parsed.dockedWidth || 40;
+              console.log(`恢复画布 ${canvasId} 的分屏状态:`, { dockedChatId, dockedWidth });
+            } catch (e) {
+              console.warn('Failed to parse docked state:', e);
+            }
+          }
+        }
+
         set({
           currentCanvas: canvas,
           currentCanvasId: canvasId,
           nodes,
           chatSessions,
+          dockedChatId,
+          dockedWidth,
           loading: false
         });
       }
@@ -683,21 +703,35 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   // 设置聊天窗口位置
   setChatWindowPosition: (chatId, position) => {
     const { chatSessions } = get();
-    set({
-      chatSessions: chatSessions.map(s =>
-        s.id === chatId ? { ...s, position } : s
-      ),
-    });
+    const updatedSessions = chatSessions.map(s =>
+      s.id === chatId ? { ...s, position, updatedAt: Date.now() } : s
+    );
+    set({ chatSessions: updatedSessions });
+
+    // 保存到数据库
+    const session = updatedSessions.find(s => s.id === chatId);
+    if (session) {
+      db.updateChatSession(chatId, { position, updatedAt: session.updatedAt }).catch(err => {
+        console.error('Failed to save chat position:', err);
+      });
+    }
   },
 
   // 设置聊天窗口大小
   setChatWindowSize: (chatId, size) => {
     const { chatSessions } = get();
-    set({
-      chatSessions: chatSessions.map(s =>
-        s.id === chatId ? { ...s, size } : s
-      ),
-    });
+    const updatedSessions = chatSessions.map(s =>
+      s.id === chatId ? { ...s, size, updatedAt: Date.now() } : s
+    );
+    set({ chatSessions: updatedSessions });
+
+    // 保存到数据库
+    const session = updatedSessions.find(s => s.id === chatId);
+    if (session) {
+      db.updateChatSession(chatId, { size, updatedAt: session.updatedAt }).catch(err => {
+        console.error('Failed to save chat size:', err);
+      });
+    }
   },
 
   // 更新聊天名称
@@ -768,24 +802,46 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 设置固定聊天窗口
   setDockedChat: (chatId) => {
+    const { currentCanvasId, dockedWidth } = get();
     set({ dockedChatId: chatId });
+
+    // 保存到 localStorage
+    if (currentCanvasId && typeof window !== 'undefined') {
+      localStorage.setItem(
+        `canvas_${currentCanvasId}_docked_state`,
+        JSON.stringify({ dockedChatId: chatId, dockedWidth })
+      );
+    }
   },
 
   // 设置固定窗口宽度（限制在30-50%之间）
   setDockedWidth: (width) => {
     const clampedWidth = Math.max(30, Math.min(50, width));
+    const { currentCanvasId, dockedChatId } = get();
     set({ dockedWidth: clampedWidth });
+
+    // 保存到 localStorage
+    if (currentCanvasId && typeof window !== 'undefined') {
+      localStorage.setItem(
+        `canvas_${currentCanvasId}_docked_state`,
+        JSON.stringify({ dockedChatId, dockedWidth: clampedWidth })
+      );
+    }
   },
 
   // 切换聊天窗口的固定状态
   toggleDockedChat: (chatId) => {
-    const { dockedChatId } = get();
-    if (dockedChatId === chatId) {
-      // 如果当前窗口已固定，则取消固定
-      set({ dockedChatId: null });
-    } else {
-      // 否则固定该窗口（会自动取消其他窗口的固定）
-      set({ dockedChatId: chatId });
+    const { dockedChatId, currentCanvasId, dockedWidth } = get();
+    const newDockedChatId = dockedChatId === chatId ? null : chatId;
+
+    set({ dockedChatId: newDockedChatId });
+
+    // 保存到 localStorage
+    if (currentCanvasId && typeof window !== 'undefined') {
+      localStorage.setItem(
+        `canvas_${currentCanvasId}_docked_state`,
+        JSON.stringify({ dockedChatId: newDockedChatId, dockedWidth })
+      );
     }
   },
 
