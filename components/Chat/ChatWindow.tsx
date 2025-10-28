@@ -728,8 +728,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
-            <p>开始与 AI 对话</p>
-            <p className="text-xs mt-1">画布内容将作为上下文提供给 AI</p>
+            <p>开始对话</p>
+            <p className="text-xs mt-1">你的画布内容会被阅读</p>
           </div>
         )}
 
@@ -922,7 +922,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                     className="rounded-2xl px-4 py-2 relative select-text cursor-text"
                     style={{
                       background: msg.role === 'user'
-                        ? 'linear-gradient(135deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.85) 100%)'
+                        ? 'rgba(139, 142, 99, 0.9)'
                         : 'rgba(248, 244, 239, 0.6)',
                       color: msg.role === 'user' ? '#fff' : '#3D342C',
                       border: msg.role === 'user' ? '1px solid rgba(139, 142, 99, 1)' : '1px solid rgba(122, 111, 103, 0.15)',
@@ -990,10 +990,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           </div>
         )}
 
-        {/* AI 回复文本显示 */}
+        {/* AI 回复文本显示 - 流式输出 */}
         {streamingMessage && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-2xl px-4 py-2 bg-gray-100 text-gray-900">
+            <div className="max-w-[80%] rounded-2xl px-4 py-2" style={{
+              background: 'rgba(248, 244, 239, 0.6)',
+              border: '1px solid rgba(122, 111, 103, 0.15)',
+              color: '#3D342C',
+            }}>
               <div className="text-sm whitespace-pre-wrap break-words">{streamingMessage}</div>
             </div>
           </div>
