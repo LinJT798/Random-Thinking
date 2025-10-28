@@ -208,9 +208,10 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative w-full h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 paper-texture"
+      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 paper-texture"
       style={{
         marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
+        width: dockedChatId ? `${100 - dockedWidth}vw` : '100%',
         background: 'linear-gradient(180deg, #F9F6F1 0%, #F3EFE9 100%)',
       }}
       onClick={handleCanvasClick}
@@ -314,9 +315,11 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         </button>
       </div>
 
-      {/* 左上角按钮组 */}
-      <div className="absolute top-6 left-6 flex items-center gap-3">
+      {/* 左上角按钮 - 独立定位 */}
+      <div className="absolute top-6 left-6">
         <SettingsMenu syncStatus={syncStatus} />
+      </div>
+      <div className="absolute top-6 left-20">
         <ChatButton />
       </div>
 
