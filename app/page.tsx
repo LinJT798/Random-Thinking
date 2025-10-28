@@ -107,13 +107,20 @@ export default function Home() {
     };
   }, [user]); // 只依赖 user
 
-  // 认证加载中
+  // 认证加载中 - 纸感风格
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen paper-texture" style={{
+        background: 'linear-gradient(180deg, #F9F6F1 0%, #F3EFE9 100%)',
+      }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <div className="text-gray-600">加载中...</div>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto mb-4" style={{
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: 'rgba(139, 142, 99, 0.2)',
+            borderBottomColor: 'rgba(139, 142, 99, 0.9)',
+          }}></div>
+          <div style={{ color: '#7A6F67' }}>加载中...</div>
         </div>
       </div>
     );
@@ -124,13 +131,20 @@ export default function Home() {
     return null;
   }
 
-  // 数据初始化中
+  // 数据初始化中 - 纸感风格
   if (!isReady || !canvasId) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen paper-texture" style={{
+        background: 'linear-gradient(180deg, #F9F6F1 0%, #F3EFE9 100%)',
+      }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <div className="text-gray-600">正在初始化...</div>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto mb-4" style={{
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: 'rgba(139, 142, 99, 0.2)',
+            borderBottomColor: 'rgba(139, 142, 99, 0.9)',
+          }}></div>
+          <div style={{ color: '#7A6F67' }}>正在初始化...</div>
         </div>
       </div>
     );
