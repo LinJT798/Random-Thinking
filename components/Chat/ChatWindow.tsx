@@ -57,10 +57,16 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     addChatReference,
     confirmToolCall,
     rejectToolCall,
+    dockedChatId,
+    dockedWidth,
+    toggleDockedChat,
   } = useCanvasStore();
 
   // Get the specific chat session
   const session = chatSessions.find(s => s.id === chatId);
+
+  // 判断当前窗口是否处于分屏模式
+  const isDocked = dockedChatId === chatId;
 
   // 自动滚焦到标题输入框
   useEffect(() => {
@@ -573,21 +579,42 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
       <div
         ref={windowRef}
-        className="fixed bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 flex flex-col overflow-hidden"
-        style={{
-          left: `${session.position.x}px`,
-          top: `${session.position.y}px`,
-          width: `${session.size.width}px`,
-          height: `${session.size.height}px`,
-          cursor: isDragging ? 'grabbing' : 'default',
-          zIndex: 1000,
-        }}
+        className={`fixed bg-white/90 backdrop-blur-xl shadow-2xl border border-gray-200/50 flex flex-col overflow-hidden ${
+          // 只在非拖动/调整大小状态下才应用过渡动画
+          !isDragging && !isResizing ? 'transition-all duration-300' : ''
+        } ${
+          isDocked
+            ? 'rounded-none'
+            : 'rounded-2xl'
+        }`}
+        style={
+          isDocked
+            ? {
+                // 分屏模式：固定在左侧
+                left: 0,
+                top: 0,
+                width: `${dockedWidth}vw`,
+                height: '100vh',
+                zIndex: 1000,
+              }
+            : {
+                // 浮动模式：正常位置
+                left: `${session.position.x}px`,
+                top: `${session.position.y}px`,
+                width: `${session.size.width}px`,
+                height: `${session.size.height}px`,
+                cursor: isDragging ? 'grabbing' : 'default',
+                zIndex: 1000,
+              }
+        }
         onWheel={(e) => e.stopPropagation()}
       >
       {/* 标题栏 */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-white/50 cursor-grab active:cursor-grabbing"
-        onMouseDown={handleDragStart}
+        className={`flex items-center justify-between px-4 py-3 border-b border-gray-200/50 bg-white/50 ${
+          isDocked ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
+        }`}
+        onMouseDown={isDocked ? undefined : handleDragStart}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
@@ -617,6 +644,28 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* 固定/取消固定按钮 */}
+          <button
+            onClick={() => toggleDockedChat(chatId)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isDocked
+                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                : 'text-gray-500 hover:bg-gray-100'
+            }`}
+            title={isDocked ? '取消固定' : '固定到左侧'}
+          >
+            {isDocked ? (
+              // 取消固定图标
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              // 固定图标
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            )}
+          </button>
           <button
             onClick={() => deleteChatSession(chatId)}
             className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-gray-500"
@@ -920,16 +969,18 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         </div>
       </div>
 
-      {/* 调整大小手柄 */}
-      <div
-        className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize"
-        onMouseDown={handleResizeStart}
-      >
-        <svg className="w-4 h-4 absolute bottom-1 right-1 text-gray-400" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M14 14V8h-1v5H8v1h5a1 1 0 001-1z"/>
-          <path d="M8 10V5H7v4H3v1h4a1 1 0 001-1z"/>
-        </svg>
-      </div>
+      {/* 调整大小手柄 - 分屏模式下隐藏 */}
+      {!isDocked && (
+        <div
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize"
+          onMouseDown={handleResizeStart}
+        >
+          <svg className="w-4 h-4 absolute bottom-1 right-1 text-gray-400" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M14 14V8h-1v5H8v1h5a1 1 0 001-1z"/>
+            <path d="M8 10V5H7v4H3v1h4a1 1 0 001-1z"/>
+          </svg>
+        </div>
+      )}
 
       </div>
     </>

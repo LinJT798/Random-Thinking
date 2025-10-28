@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import Canvas from '@/components/Canvas/Canvas';
 import CanvasToolbar from '@/components/Canvas/CanvasToolbar';
 import DraggingTextBubble from '@/components/DraggingTextBubble';
-import { CanvasSwitcher } from '@/components/Canvas/CanvasSwitcher';
-import { UserMenu } from '@/components/Auth/UserMenu';
-import { SyncStatus } from '@/components/SyncStatus';
+import ChatResizer from '@/components/Chat/ChatResizer';
 import { initDatabase } from '@/lib/db';
 import { useCanvasStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -139,25 +137,12 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* 顶部工具栏 */}
-      <div className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-4 flex-shrink-0">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-lg font-semibold text-gray-800">无边记 AI</h1>
-          <CanvasSwitcher />
-        </div>
-        <div className="flex items-center space-x-3">
-          <SyncStatus status={syncStatus} />
-          <UserMenu />
-        </div>
-      </div>
-
-      {/* 主画布区域 */}
-      <main className="relative flex-1 overflow-hidden">
-        <Canvas canvasId={canvasId} />
-        <CanvasToolbar />
-        <DraggingTextBubble />
-      </main>
+    <div className="h-screen w-screen overflow-hidden">
+      {/* 全屏画布 */}
+      <Canvas canvasId={canvasId} syncStatus={syncStatus} />
+      <CanvasToolbar />
+      <DraggingTextBubble />
+      <ChatResizer />
     </div>
   );
 }

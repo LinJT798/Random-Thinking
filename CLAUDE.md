@@ -40,13 +40,26 @@ Development server runs at http://localhost:3000
 
 ## Environment Setup
 
-Required environment variable in `.env.local`:
+Required environment variables in `.env.local`:
 
-```
+```bash
+# Required: Anthropic API Key
 ANTHROPIC_API_KEY=your_api_key_here
+
+# Optional: Supabase (for cloud sync and authentication)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
 **Important**: This project uses a custom Claude API proxy at `https://lumos.diandian.info/winky/claude` with Anthropic native format support. The `/messages` endpoint supports Extended Thinking and native streaming format. Contact the administrator for API keys.
+
+**Supabase Setup** (optional for cloud sync):
+1. Create a project at https://supabase.com/dashboard
+2. Execute the SQL schema from `supabase-schema.sql` in SQL Editor
+3. Get credentials from Project Settings > API
+4. Copy `.env.local.example` to `.env.local` and fill in credentials
+
+The app works fully offline without Supabase (local-first with IndexedDB).
 
 ## Architecture
 
@@ -69,24 +82,47 @@ All state mutations automatically sync to IndexedDB through the database layer.
 - `confirmToolCall(chatId, messageId, toolIndex)`: Marks tool call as confirmed and persists to DB
 - `rejectToolCall(chatId, messageId, toolIndex)`: Deletes created nodes, marks as rejected, persists to DB
 
-### Database Layer (`lib/db.ts`)
+### Database Layer
 
-Uses Dexie.js to wrap IndexedDB with three main tables:
+The application supports dual-storage architecture:
 
-- `canvases`: Canvas metadata (id, name, timestamps)
-- `nodes`: All node data with indexes on type, timestamps, and AI metadata
-- `chatMessages`: Chat history per canvas with timestamps
+**IndexedDB (Local-First)** - `lib/db.ts`:
+- Uses Dexie.js to wrap IndexedDB with three main tables:
+  - `canvases`: Canvas metadata (id, name, timestamps)
+  - `nodes`: All node data with indexes on type, timestamps, and AI metadata
+  - `chatSessions`: Chat history per canvas with window state and message history
+- **Schema Version**: Currently at version 4
+- **Key Pattern**: Store references nodes by ID. Canvas.nodes array stores node references, while actual node data lives in the nodes table. This prevents data duplication.
 
-**Key Pattern**: The store references nodes by ID. Canvas.nodes array stores node references, while actual node data lives in the nodes table. This prevents data duplication.
+**Supabase (Cloud Sync)** - `lib/supabase-db.ts`:
+- Optional cloud storage for multi-device sync and authentication
+- Tables: `canvases`, `nodes`, `chat_sessions`
+- Row-Level Security (RLS) ensures users only access their own data
+- Schema defined in `supabase-schema.sql`
 
-**Schema Versioning**: Currently at version 2. When adding new tables or indexes, increment the version number in the database constructor and add a new `this.version(N).stores()` block.
+**Sync Manager** - `lib/sync-manager.ts`:
+- Bidirectional sync between IndexedDB and Supabase
+- Full sync on login (merges local and cloud data by timestamp)
+- Incremental sync on canvas updates
+- Offline queue for changes made while disconnected
+- Conflict resolution: newest timestamp wins
+
+**Schema Versioning**: When adding new tables or indexes to IndexedDB, increment the version number in `lib/db.ts` constructor and add a new `this.version(N).stores()` block. For Supabase, update `supabase-schema.sql`.
 
 ### Data Flow
 
+**Local-Only Mode**:
 1. User interactions → Store actions (`lib/store.ts`)
-2. Store actions → Database operations (`lib/db.ts`)
+2. Store actions → IndexedDB operations (`lib/db.ts`)
 3. Database updates → Store state updates
 4. Store updates → React re-renders
+
+**With Cloud Sync**:
+1. User login → Authentication (`lib/auth-context.tsx` + Supabase Auth)
+2. Store actions → IndexedDB (immediate) + Sync queue
+3. Sync Manager → Uploads changes to Supabase (`lib/sync-manager.ts`)
+4. Periodic sync → Downloads cloud changes to IndexedDB
+5. Conflicts resolved by timestamp (newest wins)
 
 ### AI Integration
 
@@ -181,6 +217,22 @@ All nodes support style customization through the PropertyPanel:
 
 Access the PropertyPanel by selecting a node and pressing the Shift key.
 
+### Authentication System
+
+The app supports optional user authentication via Supabase:
+
+- **Auth Context** (`lib/auth-context.tsx`): React context providing auth state and methods
+- **Supabase Client** (`lib/supabase.ts`): Browser-side Supabase client with cookie-based sessions
+- **Server Client** (`lib/supabase-server.ts`): Server-side Supabase client for API routes
+- **Auth Routes**:
+  - `/login` - Email/password login page
+  - `/signup` - User registration page
+  - `/auth/callback` - OAuth callback handler
+- **Protected Features**: Cloud sync, multi-device access
+- **Unprotected**: Full app functionality works offline without authentication
+
+When authenticated, the app automatically syncs data to cloud and enables the sync status indicator (top-right corner).
+
 ### Component Structure
 
 ```
@@ -188,6 +240,7 @@ components/
 ├── Canvas/           # Canvas rendering and interactions
 │   ├── Canvas.tsx            # Main canvas component
 │   ├── CanvasToolbar.tsx     # Add node buttons
+│   ├── CanvasSwitcher.tsx    # Switch between canvases
 │   └── HelpButton.tsx        # Help dialog
 ├── Nodes/            # Different node type renderers
 │   ├── TextNode.tsx
@@ -200,8 +253,14 @@ components/
 ├── Chat/             # Chat system UI
 │   ├── ChatButton.tsx        # Toggle chat window
 │   └── ChatWindow.tsx        # Chat interface with streaming responses and tool call confirmation UI
-└── PropertyPanel/    # Node styling and properties
-    └── PropertyPanel.tsx     # Text color, background, font settings
+├── Auth/             # Authentication UI
+│   ├── AuthForm.tsx          # Login/signup form
+│   └── UserMenu.tsx          # User profile dropdown
+├── PropertyPanel/    # Node styling and properties
+│   └── PropertyPanel.tsx     # Text color, background, font settings
+├── SyncStatus.tsx    # Cloud sync status indicator
+├── AddToButton.tsx   # Quick add node button
+└── DraggingTextBubble.tsx # Visual feedback for text drag-to-create
 ```
 
 ### Layout System
@@ -294,23 +353,31 @@ Prompts should be in Chinese and optimized for brevity since the UI targets Chin
 
 ## Database Schema Notes
 
-- All IDs use `crypto.randomUUID()`
-- Timestamps are Unix epoch milliseconds
+- All IDs use `crypto.randomUUID()` (via `lib/uuid.ts`)
+- Timestamps are Unix epoch milliseconds (IndexedDB) or ISO strings (Supabase)
 - Canvas updates automatically update `updatedAt` timestamp
 - Node deletion cascades to remove from canvas references
-- IndexedDB schema version is currently 2 (increment if schema changes)
-- When upgrading schema, add a new `this.version(N).stores()` block in `lib/db.ts`
+- **IndexedDB schema version**: Currently at **version 4** (increment if schema changes)
+- When upgrading IndexedDB schema, add a new `this.version(N).stores()` block in `lib/db.ts`
+- Supabase uses PostgreSQL with JSONB columns for complex data (position, size, metadata)
+- Supabase Row-Level Security (RLS) policies enforce user data isolation
 
-## Context Building System
+## Utility Libraries
 
-The `lib/context-builder.ts` module provides:
+The `lib/` directory contains several specialized utilities:
 
-- **formatNodesForContext()**: Converts nodes to structured Chinese text grouped by type
-- **buildInitialContext()**: Creates initial canvas snapshot description
-- **detectNodeChanges()**: Compares current state against initial snapshot
-- **buildIncrementalContext()**: Generates change summary for AI awareness
-
-This system enables the chat AI to understand what's on the canvas and what changed during the conversation.
+- **context-builder.ts**: Formats canvas state for AI chat context
+  - `formatNodesForContext()`: Converts nodes to structured Chinese text
+  - `detectNodeChanges()`: Tracks modifications since chat started
+  - `buildIncrementalContext()`: Generates change summaries
+- **mindmap-layout.ts**: Auto-layout algorithm for mind maps
+  - `calculateMindMapLayout()`: Tree-based position calculation
+  - `getAllDescendantIds()`: Recursive child node traversal
+- **mindmap-creator.ts**: Batch creation of mind map structures
+- **smart-layout.ts**: Intelligent node positioning to avoid overlaps
+- **text-size-calculator.ts**: DOM-based text measurement for node sizing
+- **uuid.ts**: Centralized UUID generation
+- **ai.ts**: Client-side API wrappers for AI operations
 
 ## Error Handling Strategy
 
@@ -371,6 +438,27 @@ The application implements multi-layered error handling:
 - Chat history persists per canvas and survives page reloads
 
 ## Common Development Tasks
+
+### Enabling Cloud Sync for Development
+
+To test cloud sync features:
+
+1. Create a Supabase project at https://supabase.com
+2. Run the SQL schema from `supabase-schema.sql` in the SQL Editor
+3. Get your project URL and anon key from Project Settings > API
+4. Add to `.env.local`:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   ```
+5. Restart dev server
+6. Sign up at `/signup` and log in
+7. Canvas changes will now sync to Supabase
+
+**Testing Multi-Device Sync**:
+- Open app in two browser windows with same account
+- Changes in one window appear in the other after sync interval
+- Test offline: disconnect network, make changes, reconnect to see sync
 
 ### Adding a New Node Type
 
@@ -478,3 +566,26 @@ When node positions seem incorrect:
 3. Check browser console for database update errors
 4. Ensure chat session messages are properly loaded from database on page load
 5. Inspect IndexedDB (Application tab) to verify `chatSessions` table has updated messages
+
+### Cloud Sync Not Working
+
+**Symptom**: Changes don't sync between devices or to cloud
+
+**Solutions**:
+1. Verify Supabase environment variables are set in `.env.local`
+2. Check that user is authenticated (login icon in top-right)
+3. Inspect SyncStatus indicator for error state
+4. Open browser console and look for sync-related errors
+5. Verify Supabase RLS policies are correctly configured
+6. Check Network tab for failed API requests to Supabase
+7. Ensure Supabase project is not paused (free tier auto-pauses after inactivity)
+8. Test database connection: run `supabaseDB.getAllCanvases(userId)` in console
+
+**Symptom**: "Full sync failed" error on login
+
+**Solutions**:
+1. App will continue working with local data (degraded but functional)
+2. Check Supabase project status and quota limits
+3. Verify database schema matches `supabase-schema.sql`
+4. Check browser console for detailed error message
+5. Try logging out and back in to retry sync

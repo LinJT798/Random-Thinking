@@ -9,21 +9,23 @@ import MindMapNode from '../MindMap/MindMapNode';
 import MindMapConnection from '../MindMap/MindMapConnection';
 import ChatButton from '../Chat/ChatButton';
 import ChatWindow from '../Chat/ChatWindow';
-import HelpButton from './HelpButton';
+import SettingsMenu from './SettingsMenu';
 import type { CanvasNode, Position } from '@/types';
+import type { SyncStatus as SyncStatusType } from '@/lib/sync-manager';
 
 interface CanvasProps {
   canvasId: string;
+  syncStatus: SyncStatusType;
 }
 
-export default function Canvas({ canvasId }: CanvasProps) {
+export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [viewportOffset, setViewportOffset] = useState<Position>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<Position>({ x: 0, y: 0 });
 
-  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, chatSessions, draggingText, setDraggingText } = useCanvasStore();
+  const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, chatSessions, draggingText, setDraggingText, dockedChatId, dockedWidth } = useCanvasStore();
 
   // 加载画布数据
   useEffect(() => {
@@ -206,7 +208,10 @@ export default function Canvas({ canvasId }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative w-full h-screen overflow-hidden bg-white cursor-grab active:cursor-grabbing"
+      className="relative w-full h-screen overflow-hidden bg-white cursor-grab active:cursor-grabbing transition-all duration-300"
+      style={{
+        marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
+      }}
       onClick={handleCanvasClick}
       onDoubleClick={handleCanvasDoubleClick}
       onMouseDown={handleMouseDown}
@@ -293,11 +298,9 @@ export default function Canvas({ canvasId }: CanvasProps) {
       </div>
 
       {/* 左上角按钮组 */}
-      <div className="absolute top-6 left-6">
+      <div className="absolute top-6 left-6 flex items-center gap-3">
+        <SettingsMenu syncStatus={syncStatus} />
         <ChatButton />
-      </div>
-      <div className="absolute top-6 left-20">
-        <HelpButton />
       </div>
 
       {/* 聊天窗口 */}

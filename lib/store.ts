@@ -53,6 +53,10 @@ interface CanvasStore {
   currentChatId: string | null;
   chatListExpanded: boolean; // 聊天列表是否展开
 
+  // 分屏模式状态
+  dockedChatId: string | null; // 固定在左侧的聊天窗口ID
+  dockedWidth: number; // 固定窗口宽度百分比（30-50）
+
   // 拖拽文本状态
   draggingText: string | null;
   setDraggingText: (text: string | null) => void;
@@ -79,6 +83,11 @@ interface CanvasStore {
   addChatReference: (chatId: string, nodeId: string, content: string) => void;
   removeChatReference: (chatId: string, referenceId: string) => void;
   clearChatReferences: (chatId: string) => void;
+
+  // 分屏模式方法
+  setDockedChat: (chatId: string | null) => void;
+  setDockedWidth: (width: number) => void;
+  toggleDockedChat: (chatId: string) => void;
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -95,6 +104,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   chatSessions: [],
   currentChatId: null,
   chatListExpanded: false,
+
+  // 分屏模式初始状态
+  dockedChatId: null,
+  dockedWidth: 40, // 默认40%
 
   // 拖拽文本初始状态
   draggingText: null,
@@ -439,12 +452,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 关闭聊天会话
   closeChatSession: (chatId) => {
-    const { chatSessions, currentChatId } = get();
+    const { chatSessions, currentChatId, dockedChatId } = get();
     set({
       chatSessions: chatSessions.map(session =>
         session.id === chatId ? { ...session, isOpen: false } : session
       ),
       currentChatId: currentChatId === chatId ? null : currentChatId,
+      // 如果关闭的窗口处于分屏模式，退出分屏
+      dockedChatId: dockedChatId === chatId ? null : dockedChatId,
     });
   },
 
@@ -746,5 +761,32 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 设置拖拽文本
   setDraggingText: (text) => set({ draggingText: text }),
+
+  // ========================================
+  // 分屏模式方法
+  // ========================================
+
+  // 设置固定聊天窗口
+  setDockedChat: (chatId) => {
+    set({ dockedChatId: chatId });
+  },
+
+  // 设置固定窗口宽度（限制在30-50%之间）
+  setDockedWidth: (width) => {
+    const clampedWidth = Math.max(30, Math.min(50, width));
+    set({ dockedWidth: clampedWidth });
+  },
+
+  // 切换聊天窗口的固定状态
+  toggleDockedChat: (chatId) => {
+    const { dockedChatId } = get();
+    if (dockedChatId === chatId) {
+      // 如果当前窗口已固定，则取消固定
+      set({ dockedChatId: null });
+    } else {
+      // 否则固定该窗口（会自动取消其他窗口的固定）
+      set({ dockedChatId: chatId });
+    }
+  },
 
 }));
