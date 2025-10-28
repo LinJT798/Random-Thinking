@@ -199,7 +199,7 @@ export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMa
           ...getLevelStyle(),
           backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'rgba(237, 228, 213, 0.8)',
           boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
-          border: level === 0 ? '2px solid rgba(139, 142, 99, 0.4)' : level === 1 ? '1.5px solid rgba(139, 142, 99, 0.25)' : '1px solid rgba(122, 111, 103, 0.15)',
+          border: 'none', // 去掉默认边框
         }}
       >
         {/* 内容 */}

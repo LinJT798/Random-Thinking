@@ -224,12 +224,12 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
       onDoubleClick={handleDoubleClick}
     >
       <div
-        className="h-full p-4 rounded-xl transition-all paper-texture-light"
+        className={`h-full p-4 rounded-xl transition-all ${backgroundColor !== 'transparent' ? 'paper-texture-light' : ''}`}
         style={{
-          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : (isAIGenerated ? 'rgba(198, 200, 170, 0.15)' : 'rgba(237, 228, 213, 0.7)'),
-          boxShadow: '0 4px 12px rgba(61, 52, 44, 0.08)',
-          border: isAIGenerated ? '1px solid rgba(139, 142, 99, 0.3)' : '1px solid rgba(122, 111, 103, 0.15)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'transparent',
+          boxShadow: backgroundColor !== 'transparent' ? '0 4px 12px rgba(61, 52, 44, 0.08)' : 'none',
+          border: backgroundColor !== 'transparent' ? '1px solid rgba(122, 111, 103, 0.15)' : 'none',
+          backdropFilter: backgroundColor !== 'transparent' ? 'blur(8px)' : 'none',
         }}
       >
         {/* AI 标记 - 橄榄绿配色 */}
