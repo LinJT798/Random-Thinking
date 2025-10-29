@@ -603,7 +603,10 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 height: '100vh',
                 zIndex: 1000,
                 background: '#EDE4D5',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.3)',
+                borderLeft: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRight: 'none', // 分屏时去掉右边框
               }
             : {
                 // 浮动模式：正常位置
