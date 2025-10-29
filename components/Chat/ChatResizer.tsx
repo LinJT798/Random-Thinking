@@ -45,18 +45,29 @@ export default function ChatResizer() {
 
   return (
     <>
-      {/* 分割线 */}
+      {/* 分割线 - 纸感配色 */}
       <div
-        className={`fixed top-0 bottom-0 w-1 bg-gray-200/50 hover:bg-blue-400/50 transition-colors cursor-col-resize z-[1001] ${
-          isDragging ? 'bg-blue-500' : ''
-        }`}
+        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-300"
         style={{
           left: `${dockedWidth}vw`,
+          background: isDragging ? 'rgba(139, 142, 99, 0.6)' : 'rgba(122, 111, 103, 0.2)',
+        }}
+        onMouseEnter={(e) => {
+          if (!isDragging) {
+            e.currentTarget.style.background = 'rgba(139, 142, 99, 0.4)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isDragging) {
+            e.currentTarget.style.background = 'rgba(122, 111, 103, 0.2)';
+          }
         }}
         onMouseDown={handleMouseDown}
       >
         {/* 拖动指示器 */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-12 bg-gray-400/50 rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-12 rounded-full pointer-events-none transition-colors" style={{
+          background: isDragging ? 'rgba(139, 142, 99, 0.7)' : 'rgba(122, 111, 103, 0.3)',
+        }} />
       </div>
 
       {/* 全屏遮罩 - 拖动时防止鼠标事件干扰 */}

@@ -115,7 +115,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 分屏模式初始状态
   dockedChatId: null,
-  dockedWidth: 40, // 默认40%
+  dockedWidth: 20, // 默认20%
 
   // 拖拽文本初始状态
   draggingText: null,
@@ -560,7 +560,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 删除聊天会话
   deleteChatSession: async (chatId) => {
-    const { currentCanvasId, chatSessions, currentChatId } = get();
+    const { currentCanvasId, chatSessions, currentChatId, dockedChatId } = get();
 
     // 从数据库删除
     await db.deleteChatSession(chatId);
@@ -569,6 +569,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set({
       chatSessions: newSessions,
       currentChatId: currentChatId === chatId ? null : currentChatId,
+      // 如果删除的窗口处于分屏模式，退出分屏
+      dockedChatId: dockedChatId === chatId ? null : dockedChatId,
     });
 
     // 删除聊天 - 立即同步（删除操作）
