@@ -316,17 +316,54 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         <div style={{ borderTop: '1px solid rgba(122, 111, 103, 0.2)', margin: '2px 0' }} />
         <button
           onClick={() => {
-            setZoom(1);
-            setViewportOffset({ x: 0, y: 0 });
+            if (nodes.length === 0) {
+              // 没有节点，重置到原点
+              setZoom(1);
+              setViewportOffset({ x: 0, y: 0 });
+              return;
+            }
+
+            // 计算所有节点的边界框
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+
+            nodes.forEach(node => {
+              const nodeLeft = node.position.x;
+              const nodeTop = node.position.y;
+              const nodeRight = node.position.x + node.size.width;
+              const nodeBottom = node.position.y + node.size.height;
+
+              minX = Math.min(minX, nodeLeft);
+              minY = Math.min(minY, nodeTop);
+              maxX = Math.max(maxX, nodeRight);
+              maxY = Math.max(maxY, nodeBottom);
+            });
+
+            // 计算节点群的中心点（画布坐标）
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            // 计算视口大小（考虑分屏）
+            const viewportWidth = dockedChatId
+              ? window.innerWidth * (100 - dockedWidth) / 100
+              : window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // 移动视口，使节点中心在屏幕中央
+            const newOffsetX = viewportWidth / 2 - centerX * zoom;
+            const newOffsetY = viewportHeight / 2 - centerY * zoom;
+
+            setViewportOffset({ x: newOffsetX, y: newOffsetY });
           }}
           className="w-9 h-9 flex items-center justify-center rounded-lg transition-all"
           style={{ color: '#7A6F67' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-          title="重置视图"
+          title="居中显示所有节点"
         >
+          {/* 准心图标 */}
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v4m0 8v8m8-8h-4m-8 0H4m15 0a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </button>
       </div>
