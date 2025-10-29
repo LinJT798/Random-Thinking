@@ -115,7 +115,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 分屏模式初始状态
   dockedChatId: null,
-  dockedWidth: 20, // 默认20%
+  dockedWidth: 30, // 默认30%
 
   // 拖拽文本初始状态
   draggingText: null,
@@ -132,14 +132,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
         // 从 localStorage 恢复分屏状态
         let dockedChatId = null;
-        let dockedWidth = 40;
+        let dockedWidth = 30;
         if (typeof window !== 'undefined') {
           const savedState = localStorage.getItem(`canvas_${canvasId}_docked_state`);
           if (savedState) {
             try {
               const parsed = JSON.parse(savedState);
               dockedChatId = parsed.dockedChatId;
-              dockedWidth = parsed.dockedWidth || 40;
+              dockedWidth = parsed.dockedWidth || 30;
               console.log(`恢复画布 ${canvasId} 的分屏状态:`, { dockedChatId, dockedWidth });
             } catch (e) {
               console.warn('Failed to parse docked state:', e);
