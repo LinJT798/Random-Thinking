@@ -21,7 +21,7 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
       <DropdownMenu.Root open={open} onOpenChange={setOpen}>
         <DropdownMenu.Trigger asChild>
           <button
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all elastic-transition glass-effect"
             style={{
               background: '#EDE4D5',
               border: '1px solid rgba(255, 255, 255, 0.3)',

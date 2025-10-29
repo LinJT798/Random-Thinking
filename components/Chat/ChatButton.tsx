@@ -22,7 +22,7 @@ export default function ChatButton() {
       {/* 主聊天按钮 - 立体边缘效果 */}
       <button
         onClick={handleMainButtonClick}
-        className="w-10 h-10 flex items-center justify-center rounded-xl transition-all glass-effect"
+        className="w-10 h-10 flex items-center justify-center rounded-xl transition-all elastic-transition glass-effect"
         style={{
           background: '#EDE4D5',
           border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -60,7 +60,7 @@ export default function ChatButton() {
                   switchChat(session.id);
                 }
               }}
-              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-sm font-medium glass-effect stagger-item"
+              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all elastic-transition text-sm font-medium glass-effect stagger-item"
               style={{
                 background: session.isOpen ? '#8B8E63' : '#EDE4D5',
                 border: session.isOpen ? '1px solid rgba(139, 142, 99, 0.8)' : '1px solid rgba(255, 255, 255, 0.3)',

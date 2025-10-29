@@ -60,7 +60,7 @@ export default function CanvasToolbar() {
     <div className="absolute top-6 right-6 z-[2000]">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button className="w-12 h-12 rounded-2xl transition-all flex items-center justify-center group glass-effect" style={{
+          <button className="w-12 h-12 rounded-2xl transition-all elastic-transition flex items-center justify-center group glass-effect" style={{
             background: '#EDE4D5',
             border: '1px solid rgba(255, 255, 255, 0.3)',
           }}>

@@ -588,8 +588,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       <div
         ref={windowRef}
         className={`fixed flex flex-col overflow-hidden glass-effect ${
-          // 只在非拖动/调整大小状态下才应用过渡动画
-          !isDragging && !isResizing ? 'transition-all duration-300' : ''
+          // 只在非拖动/调整大小状态下才应用过渡动画（弹性缓动）
+          !isDragging && !isResizing ? 'transition-all duration-300 elastic-transition' : ''
         } ${
           isDocked
             ? 'rounded-none'
@@ -798,7 +798,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                     return (
                       <div
                         key={index}
-                        className="rounded-2xl transition-all duration-300 hover:-translate-y-0.5 px-4 py-3 space-y-3"
+                        className="rounded-2xl transition-all duration-300 elastic-transition hover:-translate-y-0.5 px-4 py-3 space-y-3 bubble-animate-in"
                         style={{
                           background: 'linear-gradient(135deg, rgba(198, 200, 170, 0.2) 0%, rgba(139, 142, 99, 0.15) 100%)',
                           border: '1px solid rgba(139, 142, 99, 0.3)',
@@ -909,7 +909,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 // 普通消息气泡
                 <>
                   <div
-                    className="rounded-2xl px-4 py-2 relative select-text cursor-text"
+                    className="rounded-2xl px-4 py-2 relative select-text cursor-text bubble-animate-in"
                     style={{
                       background: msg.role === 'user'
                         ? 'rgba(139, 142, 99, 0.9)'
@@ -983,7 +983,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         {/* AI 回复文本显示 - 流式输出 */}
         {streamingMessage && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-2xl px-4 py-2" style={{
+            <div className="max-w-[80%] rounded-2xl px-4 py-2 bubble-animate-in" style={{
               background: 'rgba(248, 244, 239, 0.6)',
               border: '1px solid rgba(122, 111, 103, 0.15)',
               color: '#3D342C',

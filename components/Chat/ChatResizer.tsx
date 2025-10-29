@@ -60,9 +60,9 @@ export default function ChatResizer() {
 
   return (
     <>
-      {/* 分割线 - 纸感配色，淡入动画 */}
+      {/* 分割线 - 纸感配色，弹性缓动 */}
       <div
-        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-300 animate-in fade-in-0"
+        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-300 elastic-transition animate-in fade-in-0"
         style={{
           left: `${dockedWidth}vw`,
           background: isDragging ? 'rgba(139, 142, 99, 0.6)' : 'rgba(122, 111, 103, 0.2)',

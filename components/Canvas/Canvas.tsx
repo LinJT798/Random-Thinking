@@ -244,7 +244,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300"
+      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 elastic-transition"
       style={{
         marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
         width: dockedChatId ? `${100 - dockedWidth}vw` : '100%',
@@ -304,7 +304,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
       >
         <button
           onClick={() => setZoom(prev => Math.min(3, prev + 0.1))}
-          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
+          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all elastic-transition"
           style={{ color: '#3D342C' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -319,7 +319,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         </div>
         <button
           onClick={() => setZoom(prev => Math.max(0.1, prev - 0.1))}
-          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
+          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all elastic-transition"
           style={{ color: '#3D342C' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -371,7 +371,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
 
             setViewportOffset({ x: newOffsetX, y: newOffsetY });
           }}
-          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
+          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all elastic-transition"
           style={{ color: '#7A6F67' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
