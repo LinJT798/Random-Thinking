@@ -69,17 +69,28 @@ export default function Home() {
 
         console.log('✅ Sync enabled successfully');
 
-        // 加载或创建第一个画布
+        // 加载或创建画布
         const { db } = await import('@/lib/db');
         const allCanvases = await db.getAllCanvases();
 
         console.log(`Found ${allCanvases.length} existing canvases`);
 
         if (allCanvases.length > 0) {
-          // 加载最近使用的画布
+          // 尝试加载上次使用的画布
+          const lastCanvasId = localStorage.getItem('last_canvas_id');
+          let canvasToLoad = allCanvases[0].id; // 默认第一个
+
+          // 检查上次的画布是否存在
+          if (lastCanvasId && allCanvases.some(c => c.id === lastCanvasId)) {
+            canvasToLoad = lastCanvasId;
+            console.log(`恢复上次使用的画布: ${lastCanvasId}`);
+          } else {
+            console.log('使用最近更新的画布');
+          }
+
           const store = useCanvasStore.getState();
-          await store.loadCanvas(allCanvases[0].id);
-          setCanvasId(allCanvases[0].id);
+          await store.loadCanvas(canvasToLoad);
+          setCanvasId(canvasToLoad);
         } else {
           // 创建第一个画布
           console.log('Creating first canvas...');

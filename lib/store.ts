@@ -156,6 +156,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           dockedWidth,
           loading: false
         });
+
+        // 保存为最后使用的画布
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('last_canvas_id', canvasId);
+          console.log(`💾 保存最后使用的画布: ${canvasId}`);
+        }
       }
     } catch (error) {
       console.error('Failed to load canvas:', error);
