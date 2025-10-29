@@ -97,9 +97,17 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
     if (e.target === e.currentTarget) {
       // 如果有拖拽的文本，创建新节点
       if (draggingText) {
-        // 计算在画布坐标系中的位置
-        const x = (e.clientX - viewportOffset.x) / zoom;
-        const y = (e.clientY - viewportOffset.y) / zoom;
+        // 获取画布元素的边界（考虑分屏模式的偏移）
+        const canvasBounds = canvasRef.current?.getBoundingClientRect();
+        if (!canvasBounds) return;
+
+        // 计算相对于画布左上角的鼠标位置
+        const mouseX = e.clientX - canvasBounds.left;
+        const mouseY = e.clientY - canvasBounds.top;
+
+        // 转换为画布坐标系
+        const x = (mouseX - viewportOffset.x) / zoom;
+        const y = (mouseY - viewportOffset.y) / zoom;
 
         // 计算文本所需的尺寸
         const size = calculateTextNodeSize(draggingText);
@@ -124,9 +132,17 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   // 处理双击画布（创建文本节点）
   const handleCanvasDoubleClick = useCallback(async (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      // 计算在画布坐标系中的位置
-      const x = (e.clientX - viewportOffset.x) / zoom;
-      const y = (e.clientY - viewportOffset.y) / zoom;
+      // 获取画布元素的边界（考虑分屏模式的偏移）
+      const canvasBounds = canvasRef.current?.getBoundingClientRect();
+      if (!canvasBounds) return;
+
+      // 计算相对于画布左上角的鼠标位置
+      const mouseX = e.clientX - canvasBounds.left;
+      const mouseY = e.clientY - canvasBounds.top;
+
+      // 转换为画布坐标系
+      const x = (mouseX - viewportOffset.x) / zoom;
+      const y = (mouseY - viewportOffset.y) / zoom;
 
       await addNode({
         type: 'text',
