@@ -26,7 +26,9 @@ export class SupabaseDB {
       .select('id')
       .limit(1)
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
     if (!data || data.length === 0) throw new Error('Failed to create canvas')
     return data[0].id
   }
@@ -39,7 +41,9 @@ export class SupabaseDB {
       .is('deleted_at', null)
       .order('updated_at', { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
 
     // 为每个画布加载节点
     const canvasesWithNodes = await Promise.all(
@@ -86,7 +90,9 @@ export class SupabaseDB {
       .update({ name })
       .eq('id', canvasId)
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error updating canvas: ${error.message || JSON.stringify(error)}`)
+    }
   }
 
   async deleteCanvas(canvasId: string): Promise<void> {
@@ -96,7 +102,9 @@ export class SupabaseDB {
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', canvasId)
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
   }
 
   // ========================================
@@ -110,7 +118,9 @@ export class SupabaseDB {
       .eq('canvas_id', canvasId)
       .order('created_at', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
 
     return data.map(this.dbNodeToCanvasNode)
   }
@@ -139,7 +149,9 @@ export class SupabaseDB {
       .select('id')
       .single()
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
     return data.id
   }
 
@@ -162,7 +174,9 @@ export class SupabaseDB {
       .update(updateData)
       .eq('id', nodeId)
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
   }
 
   async deleteNode(nodeId: string): Promise<void> {
@@ -171,7 +185,9 @@ export class SupabaseDB {
       .delete()
       .eq('id', nodeId)
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
   }
 
   async bulkUpsertNodes(userId: string, canvasId: string, nodes: CanvasNode[]): Promise<void> {
@@ -198,7 +214,9 @@ export class SupabaseDB {
       .from('nodes')
       .upsert(insertData, { onConflict: 'id' })
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
   }
 
   // ========================================
@@ -239,7 +257,9 @@ export class SupabaseDB {
       .eq('canvas_id', canvasId)
       .order('created_at', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
 
     return data.map(session => ({
       id: session.id,
