@@ -6,6 +6,7 @@ import { useCanvasStore } from '@/lib/store';
 export default function ChatResizer() {
   const { dockedChatId, dockedWidth, setDockedWidth } = useCanvasStore();
   const [isDragging, setIsDragging] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -40,14 +41,28 @@ export default function ChatResizer() {
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // 如果没有固定的聊天窗口，不渲染
-  if (!dockedChatId) return null;
+  // 延迟显示分割线，等待对话框动画完成（300ms）
+  useEffect(() => {
+    if (dockedChatId) {
+      // 有固定窗口，延迟 300ms 显示分割线
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      // 没有固定窗口，立即隐藏
+      setIsVisible(false);
+    }
+  }, [dockedChatId]);
+
+  // 如果没有固定的聊天窗口或未到显示时间，不渲染
+  if (!dockedChatId || !isVisible) return null;
 
   return (
     <>
-      {/* 分割线 - 纸感配色 */}
+      {/* 分割线 - 纸感配色，淡入动画 */}
       <div
-        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-300"
+        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-300 animate-in fade-in-0"
         style={{
           left: `${dockedWidth}vw`,
           background: isDragging ? 'rgba(139, 142, 99, 0.6)' : 'rgba(122, 111, 103, 0.2)',
