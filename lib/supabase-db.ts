@@ -225,9 +225,18 @@ export class SupabaseDB {
       }
     }
 
-    // 4. Upsert 本地节点到云端
+    // 4. Upsert 本地节点到云端（按依赖顺序）
     if (nodes.length > 0) {
-      const insertData: InsertNode[] = nodes.map(node => ({
+      // 先按层级排序：父节点优先
+      const sortedNodes = [...nodes].sort((a, b) => {
+        // 没有 parentId 的优先（顶层节点）
+        if (!a.parentId && b.parentId) return -1
+        if (a.parentId && !b.parentId) return 1
+        // 都有或都没有，按创建时间
+        return a.createdAt - b.createdAt
+      })
+
+      const insertData: InsertNode[] = sortedNodes.map(node => ({
         id: node.id,
         canvas_id: canvasId,
         user_id: userId,
