@@ -226,7 +226,10 @@ export class SupabaseDB {
       .from('chat_sessions')
       .upsert(insertData, { onConflict: 'id' })
 
-    if (error) throw error
+    if (error) {
+      // 转换为标准 Error 对象，包含详细信息
+      throw new Error(`Supabase error saving chat session: ${error.message || JSON.stringify(error)}`)
+    }
   }
 
   async getChatSessions(canvasId: string): Promise<ChatSession[]> {
