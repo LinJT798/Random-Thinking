@@ -280,7 +280,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
 
       {/* 缩放控制 - 立体边缘效果 */}
       <div
-        className="absolute bottom-6 right-6 flex flex-col gap-1 rounded-xl p-1.5 glass-effect z-[2000]"
+        className="absolute bottom-6 right-6 flex flex-col gap-0.5 rounded-xl p-2 glass-effect z-[2000]"
         style={{
           background: '#EDE4D5',
           border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -288,32 +288,32 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
       >
         <button
           onClick={() => setZoom(prev => Math.min(3, prev + 0.1))}
-          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium"
+          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
           style={{ color: '#3D342C' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="放大 (Ctrl + 滚轮)"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
         </button>
-        <div className="text-center text-xs px-2 py-1 font-medium" style={{ color: '#7A6F67' }}>
+        <div className="w-10 h-8 flex items-center justify-center text-xs font-medium" style={{ color: '#7A6F67' }}>
           {Math.round(zoom * 100)}%
         </div>
         <button
           onClick={() => setZoom(prev => Math.max(0.1, prev - 0.1))}
-          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all font-medium"
+          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
           style={{ color: '#3D342C' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="缩小 (Ctrl + 滚轮)"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
           </svg>
         </button>
-        <div style={{ borderTop: '1px solid rgba(122, 111, 103, 0.2)', margin: '2px 0' }} />
+        <div className="w-10 border-t my-1" style={{ borderColor: 'rgba(122, 111, 103, 0.2)' }} />
         <button
           onClick={() => {
             if (nodes.length === 0) {
@@ -355,7 +355,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
 
             setViewportOffset({ x: newOffsetX, y: newOffsetY });
           }}
-          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all"
+          className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
           style={{ color: '#7A6F67' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
