@@ -41,13 +41,13 @@ export default function ChatResizer() {
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // 延迟显示分割线，等待对话框动画完成（300ms）
+  // 延迟显示分割线，等待对话框动画完成（500ms）
   useEffect(() => {
     if (dockedChatId) {
-      // 有固定窗口，延迟 300ms 显示分割线
+      // 有固定窗口，延迟 500ms 显示分割线
       const timer = setTimeout(() => {
         setIsVisible(true);
-      }, 300);
+      }, 500);
       return () => clearTimeout(timer);
     } else {
       // 没有固定窗口，立即隐藏
@@ -62,7 +62,7 @@ export default function ChatResizer() {
     <>
       {/* 分割线 - 纸感配色，弹性缓动 */}
       <div
-        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-300 elastic-transition animate-in fade-in-0"
+        className="fixed top-0 bottom-0 w-1 cursor-col-resize z-[1001] transition-all duration-500 elastic-transition animate-in fade-in-0"
         style={{
           left: `${dockedWidth}vw`,
           background: isDragging ? 'rgba(139, 142, 99, 0.6)' : 'rgba(122, 111, 103, 0.2)',

@@ -589,7 +589,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         ref={windowRef}
         className={`fixed flex flex-col overflow-hidden glass-effect ${
           // 只在非拖动/调整大小状态下才应用过渡动画（弹性缓动）
-          !isDragging && !isResizing ? 'transition-all duration-300 elastic-transition' : ''
+          !isDragging && !isResizing ? 'transition-all duration-500 elastic-transition' : ''
         } ${
           isDocked
             ? 'rounded-none'

@@ -244,7 +244,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
   return (
     <div
       ref={canvasRef}
-      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-300 elastic-transition"
+      className="relative h-screen overflow-hidden cursor-grab active:cursor-grabbing transition-all duration-500 elastic-transition"
       style={{
         marginLeft: dockedChatId ? `${dockedWidth}vw` : '0',
         width: dockedChatId ? `${100 - dockedWidth}vw` : '100%',
