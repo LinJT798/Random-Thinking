@@ -361,9 +361,20 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           title="居中显示所有节点"
         >
-          {/* 准心图标 */}
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v4m0 8v8m8-8h-4m-8 0H4m15 0a7 7 0 11-14 0 7 7 0 0114 0z" />
+          {/* 标准准心图标 */}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            {/* 圆环 */}
+            <circle cx="12" cy="12" r="6" />
+            {/* 上方准线 */}
+            <path strokeLinecap="round" d="M12 2v4" />
+            {/* 下方准线 */}
+            <path strokeLinecap="round" d="M12 18v4" />
+            {/* 左侧准线 */}
+            <path strokeLinecap="round" d="M2 12h4" />
+            {/* 右侧准线 */}
+            <path strokeLinecap="round" d="M18 12h4" />
+            {/* 中心点 */}
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" />
           </svg>
         </button>
       </div>
