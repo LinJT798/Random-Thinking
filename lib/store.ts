@@ -172,6 +172,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         currentCanvasId: canvasId,
         nodes: []
       });
+
+      // 创建画布 - 立即同步（重要操作）
+      if (syncManager) {
+        syncManager.immediateSyncCanvas(canvasId);
+      }
     }
     return canvasId;
   },
@@ -201,9 +206,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         });
         console.log(`✅ Node added to store. Total nodes: ${nodes.length + 1}`);
 
-        // 触发防抖同步
+        // 创建节点 - 立即同步（重要操作）
         if (syncManager) {
-          syncManager.debouncedSyncCanvas(currentCanvasId);
+          syncManager.immediateSyncCanvas(currentCanvasId);
         }
       } else {
         console.error('❌ Failed to retrieve node from DB after creation');
@@ -258,9 +263,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       future: [] // 清空重做历史
     });
 
-    // 触发防抖同步
+    // 删除节点 - 立即同步（破坏性操作，必须立即保存）
     if (syncManager && currentCanvasId) {
-      syncManager.debouncedSyncCanvas(currentCanvasId);
+      syncManager.immediateSyncCanvas(currentCanvasId);
     }
   },
 
@@ -382,9 +387,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         future: [],
       });
 
-      // 触发防抖同步
+      // 创建子节点 - 立即同步（创建操作）
       if (syncManager && currentCanvasId) {
-        syncManager.debouncedSyncCanvas(currentCanvasId);
+        syncManager.immediateSyncCanvas(currentCanvasId);
       }
     }
 
@@ -549,7 +554,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 删除聊天会话
   deleteChatSession: async (chatId) => {
-    const { chatSessions, currentChatId } = get();
+    const { currentCanvasId, chatSessions, currentChatId } = get();
 
     // 从数据库删除
     await db.deleteChatSession(chatId);
@@ -559,6 +564,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       chatSessions: newSessions,
       currentChatId: currentChatId === chatId ? null : currentChatId,
     });
+
+    // 删除聊天 - 立即同步（删除操作）
+    if (syncManager && currentCanvasId) {
+      syncManager.immediateSyncCanvas(currentCanvasId);
+    }
   },
 
   // 发送聊天消息

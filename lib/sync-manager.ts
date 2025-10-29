@@ -246,6 +246,19 @@ export class SyncManager {
     console.log('All debounced syncs cancelled')
   }
 
+  // 立即同步（不防抖）- 用于重要操作
+  async immediateSyncCanvas(canvasId: string) {
+    // 取消该画布的防抖同步（如果有）
+    const existingTimer = this.debouncedSyncTimers.get(canvasId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      this.debouncedSyncTimers.delete(canvasId)
+    }
+
+    console.log(`⚡ 立即同步 - Canvas: ${canvasId}`)
+    await this.syncCanvasToCloud(canvasId)
+  }
+
   // ========================================
   // 离线队列
   // ========================================
