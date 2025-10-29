@@ -21,6 +21,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const [streamingMessage, setStreamingMessage] = useState('');
   const [toolCallStatus, setToolCallStatus] = useState<string>('');
   const [inputRows, setInputRows] = useState(1); // 输入框行数
+  const [isComposing, setIsComposing] = useState(false); // 输入法状态
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -399,7 +400,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
 
   // 处理键盘快捷键
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // 输入法激活时不响应回车（避免输入法确认时误发送）
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSend();
     }
@@ -1050,6 +1052,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
               setInputRows(Math.min(lineCount, 2)); // 最多2行
             }}
             onKeyDown={handleKeyDown}
+            onCompositionStart={() => setIsComposing(true)}
+            onCompositionEnd={() => setIsComposing(false)}
             className="flex-1 resize-none rounded-xl px-3 py-2 text-sm focus:outline-none"
             style={{
               background: 'rgba(248, 244, 239, 0.8)',
