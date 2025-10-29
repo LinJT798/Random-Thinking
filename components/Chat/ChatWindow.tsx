@@ -51,6 +51,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     setChatWindowSize,
     updateChatName,
     addNode,
+    updateNode,
     nodes,
     removeChatReference,
     clearChatReferences,
@@ -162,6 +163,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             (input.children as any[] | undefined) || [],
             {
               addNode,
+              updateNode,
               startPosition: position,
               getAllNodes: () => useCanvasStore.getState().nodes
             }

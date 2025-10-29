@@ -8,6 +8,7 @@ interface MindMapChild {
 
 interface CreateMindMapOptions {
   addNode: (node: Omit<CanvasNode, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  updateNode?: (nodeId: string, updates: Partial<CanvasNode>) => Promise<void>;
   startPosition?: { x: number; y: number };
   getAllNodes: () => CanvasNode[];
 }
@@ -20,7 +21,7 @@ export async function createMindMapNetwork(
   children: MindMapChild[],
   options: CreateMindMapOptions
 ): Promise<void> {
-  const { addNode, startPosition = { x: 100, y: 100 }, getAllNodes } = options;
+  const { addNode, startPosition = { x: 100, y: 100 }, getAllNodes, updateNode } = options;
 
   // 创建根节点
   const rootId = await addNode({
@@ -29,6 +30,7 @@ export async function createMindMapNetwork(
     position: startPosition,
     size: { width: 150, height: 50 },
     connections: [],
+    childrenIds: [], // 初始化为空数组
     mindMapMetadata: {
       level: 0,
       collapsed: false,
@@ -38,7 +40,12 @@ export async function createMindMapNetwork(
   });
 
   // 递归创建子节点
-  await createChildNodes(rootId, children, 1, 0, startPosition.x, startPosition.y, addNode, getAllNodes);
+  const childIds = await createChildNodes(rootId, children, 1, 0, startPosition.x, startPosition.y, addNode, getAllNodes, updateNode);
+
+  // 更新根节点的 childrenIds
+  if (childIds.length > 0 && updateNode) {
+    await updateNode(rootId, { childrenIds: childIds });
+  }
 }
 
 /**
@@ -74,8 +81,9 @@ async function createChildNodes(
   parentX: number,
   parentY: number,
   addNode: (node: Omit<CanvasNode, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>,
-  getAllNodes: () => CanvasNode[]
-): Promise<void> {
+  getAllNodes: () => CanvasNode[],
+  updateNode?: (nodeId: string, updates: Partial<CanvasNode>) => Promise<void>
+): Promise<string[]> {
   const horizontalSpacing = 250;
   const nodeWidth = 150;
   const nodeHeight = 50;
@@ -83,6 +91,8 @@ async function createChildNodes(
 
   // 动态计算垂直间距，确保不重叠
   const verticalSpacing = 100;
+
+  const createdChildIds: string[] = [];
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
@@ -122,6 +132,7 @@ async function createChildNodes(
       size: { width: nodeWidth, height: nodeHeight },
       connections: [],
       parentId,
+      childrenIds: [], // 初始化为空数组
       mindMapMetadata: {
         level,
         collapsed: false,
@@ -130,9 +141,11 @@ async function createChildNodes(
       }
     });
 
+    createdChildIds.push(childId);
+
     // 递归创建孙节点
     if (child.children && child.children.length > 0) {
-      await createChildNodes(
+      const grandchildIds = await createChildNodes(
         childId,
         child.children,
         level + 1,
@@ -140,8 +153,16 @@ async function createChildNodes(
         baseX,
         finalY,
         addNode,
-        getAllNodes
+        getAllNodes,
+        updateNode
       );
+
+      // 更新子节点的 childrenIds
+      if (grandchildIds.length > 0 && updateNode) {
+        await updateNode(childId, { childrenIds: grandchildIds });
+      }
     }
   }
+
+  return createdChildIds;
 }
