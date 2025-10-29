@@ -4,6 +4,14 @@ import { db } from './db';
 import { calculateMindMapLayout, getAllDescendantIds } from './mindmap-layout';
 import { generateUUID } from './uuid';
 
+// 延迟导入 syncManager 避免循环依赖
+let syncManager: any = null;
+if (typeof window !== 'undefined') {
+  import('./sync-manager').then(module => {
+    syncManager = module.syncManager;
+  });
+}
+
 interface CanvasStore {
   // 当前画布
   currentCanvas: CanvasData | null;
@@ -192,6 +200,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           future: [] // 清空重做历史
         });
         console.log(`✅ Node added to store. Total nodes: ${nodes.length + 1}`);
+
+        // 触发防抖同步
+        if (syncManager) {
+          syncManager.debouncedSyncCanvas(currentCanvasId);
+        }
       } else {
         console.error('❌ Failed to retrieve node from DB after creation');
       }
@@ -204,6 +217,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   updateNode: async (nodeId, updates) => {
+    const { currentCanvasId } = get();
     await db.updateNode(nodeId, updates);
 
     const { nodes, history } = get();
@@ -218,6 +232,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       history: [...history, nodes],
       future: [] // 清空重做历史
     });
+
+    // 触发防抖同步
+    if (syncManager && currentCanvasId) {
+      syncManager.debouncedSyncCanvas(currentCanvasId);
+    }
   },
 
   deleteNode: async (nodeId) => {
@@ -238,6 +257,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       history: [...history, nodes],
       future: [] // 清空重做历史
     });
+
+    // 触发防抖同步
+    if (syncManager && currentCanvasId) {
+      syncManager.debouncedSyncCanvas(currentCanvasId);
+    }
   },
 
   selectNode: (nodeId) => {
@@ -357,6 +381,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         history: [...history, nodes],
         future: [],
       });
+
+      // 触发防抖同步
+      if (syncManager && currentCanvasId) {
+        syncManager.debouncedSyncCanvas(currentCanvasId);
+      }
     }
 
     return nodeId;
@@ -364,7 +393,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   // 切换节点折叠状态
   toggleNodeCollapse: async (nodeId) => {
-    const { nodes, history } = get();
+    const { currentCanvasId, nodes, history } = get();
     const node = nodes.find(n => n.id === nodeId);
 
     if (!node || !node.mindMapMetadata) return;
@@ -393,11 +422,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       history: [...history, nodes],
       future: [],
     });
+
+    // 触发防抖同步
+    if (syncManager && currentCanvasId) {
+      syncManager.debouncedSyncCanvas(currentCanvasId);
+    }
   },
 
   // 应用自动布局
   applyAutoLayout: async (rootNodeId, layoutType = 'horizontal') => {
-    const { nodes, history } = get();
+    const { currentCanvasId, nodes, history } = get();
 
     // 计算新的布局位置
     const newPositions = calculateMindMapLayout(nodes, rootNodeId, layoutType);
@@ -419,6 +453,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       history: [...history, nodes],
       future: [],
     });
+
+    // 触发防抖同步
+    if (syncManager && currentCanvasId) {
+      syncManager.debouncedSyncCanvas(currentCanvasId);
+    }
   },
 
   // 创建新的聊天会话

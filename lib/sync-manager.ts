@@ -13,6 +13,7 @@ export class SyncManager {
   private syncInterval: NodeJS.Timeout | null = null
   private userId: string | null = null
   private onStatusChange?: (status: SyncStatus) => void
+  private debouncedSyncTimers: Map<string, NodeJS.Timeout> = new Map() // 防抖定时器
 
   constructor() {
     // 监听网络状态
@@ -214,6 +215,35 @@ export class SyncManager {
       this.syncInterval = null
       console.log('Periodic sync stopped')
     }
+  }
+
+  // ========================================
+  // 防抖同步 - 修改后5秒无新修改才同步
+  // ========================================
+
+  debouncedSyncCanvas(canvasId: string, delayMs: number = 5000) {
+    // 清除该画布之前的定时器
+    const existingTimer = this.debouncedSyncTimers.get(canvasId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+    }
+
+    // 设置新的定时器
+    const timer = setTimeout(async () => {
+      console.log(`🔄 防抖同步触发 - Canvas: ${canvasId}`)
+      await this.syncCanvasToCloud(canvasId)
+      this.debouncedSyncTimers.delete(canvasId)
+    }, delayMs)
+
+    this.debouncedSyncTimers.set(canvasId, timer)
+    console.log(`⏱️ 防抖同步已设置 - ${delayMs}ms 后执行`)
+  }
+
+  // 取消所有防抖同步
+  cancelAllDebouncedSyncs() {
+    this.debouncedSyncTimers.forEach((timer) => clearTimeout(timer))
+    this.debouncedSyncTimers.clear()
+    console.log('All debounced syncs cancelled')
   }
 
   // ========================================
