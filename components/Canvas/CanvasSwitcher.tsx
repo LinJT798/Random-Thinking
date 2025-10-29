@@ -152,10 +152,14 @@ export function CanvasSwitcher() {
             className="fixed inset-0 z-[2050]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute left-0 mt-2 w-72 rounded-xl z-[2100] max-h-96 overflow-y-auto glass-effect dropdown-animate-in" style={{
-            background: '#EDE4D5',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-          }}>
+          <div
+            className="absolute left-0 mt-2 w-72 rounded-xl z-[2100] max-h-96 overflow-y-auto glass-effect dropdown-animate-in"
+            style={{
+              background: '#EDE4D5',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+            }}
+            onWheel={(e) => e.stopPropagation()}
+          >
             {/* 新建画布按钮 - 焦糖橙 */}
             {!showCreateForm ? (
               <button

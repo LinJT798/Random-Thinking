@@ -36,10 +36,14 @@ export function UserMenu() {
             className="fixed inset-0 z-[2050]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-48 rounded-lg py-1 z-[2100] glass-effect dropdown-animate-in" style={{
-            background: '#EDE4D5',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-          }}>
+          <div
+            className="absolute right-0 mt-2 w-48 rounded-lg py-1 z-[2100] glass-effect dropdown-animate-in"
+            style={{
+              background: '#EDE4D5',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+            }}
+            onWheel={(e) => e.stopPropagation()}
+          >
             <div className="px-4 py-2 text-sm" style={{
               borderBottom: '1px solid rgba(122, 111, 103, 0.15)',
             }}>

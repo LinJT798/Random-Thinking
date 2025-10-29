@@ -63,6 +63,7 @@ export default function PropertyPanel({ node, showBackgroundColor = true }: Prop
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
     >
       {/* 字体大小 */}
       <div className="flex flex-col gap-1">

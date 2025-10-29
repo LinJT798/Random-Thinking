@@ -59,6 +59,7 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
             }}
             sideOffset={8}
             align="start"
+            onWheel={(e) => e.stopPropagation()}
           >
             {/* 画布 */}
             <div className="px-4 py-3 transition-colors" style={{

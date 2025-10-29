@@ -79,6 +79,7 @@ export default function CanvasToolbar() {
             }}
             sideOffset={8}
             align="end"
+            onWheel={(e) => e.stopPropagation()}
           >
             <DropdownMenu.Item
               onClick={handleAddTextNode}
