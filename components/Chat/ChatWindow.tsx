@@ -896,7 +896,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                               </div>
                             )}
                           </div>
-                        </div>
                       </div>
                     );
                   })}
