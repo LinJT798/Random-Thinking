@@ -69,7 +69,13 @@ export class SupabaseDB {
       .eq('id', canvasId)
       .limit(1)
 
-    if (error || !data || data.length === 0) return null
+    // 区分网络错误和真的不存在
+    if (error) {
+      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    }
+
+    // 数据为空 = 画布不存在
+    if (!data || data.length === 0) return null
 
     const canvas = data[0]
 

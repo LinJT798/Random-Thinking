@@ -109,16 +109,36 @@ export class SyncManager {
       const localNodes = await db.getCanvasNodes(canvasId)
 
       // 检查云端是否存在
-      const cloudCanvas = await supabaseDB.getCanvas(canvasId)
+      let cloudCanvas = null
+      let hasFetchError = false
 
-      if (!cloudCanvas) {
-        // 云端不存在，创建（使用本地的 ID）
-        await supabaseDB.createCanvas(this.userId, localCanvas.name, canvasId)
-        console.log(`Created canvas ${canvasId} in cloud`)
-      } else if (localCanvas.updatedAt > cloudCanvas.updatedAt) {
-        // 本地更新，更新云端
-        await supabaseDB.updateCanvas(canvasId, localCanvas.name)
-        console.log(`Updated canvas ${canvasId} in cloud`)
+      try {
+        cloudCanvas = await supabaseDB.getCanvas(canvasId)
+      } catch (fetchError) {
+        hasFetchError = true
+        console.warn(`⚠️ 无法检查云端画布状态（可能网络问题），跳过画布元数据同步`)
+        // 网络错误时，跳过画布创建/更新，继续同步节点
+      }
+
+      if (!hasFetchError) {
+        if (cloudCanvas === null) {
+          // 云端真的不存在（不是网络错误），创建
+          try {
+            await supabaseDB.createCanvas(this.userId, localCanvas.name, canvasId)
+            console.log(`Created canvas ${canvasId} in cloud`)
+          } catch (createError: any) {
+            // 如果是主键冲突，说明画布其实存在，忽略错误
+            if (createError.message?.includes('duplicate key')) {
+              console.warn(`⚠️ 画布 ${canvasId} 已存在，跳过创建`)
+            } else {
+              throw createError
+            }
+          }
+        } else if (localCanvas.updatedAt > cloudCanvas.updatedAt) {
+          // 本地更新，更新云端
+          await supabaseDB.updateCanvas(canvasId, localCanvas.name)
+          console.log(`Updated canvas ${canvasId} in cloud`)
+        }
       }
 
       // 同步节点（批量上传）
