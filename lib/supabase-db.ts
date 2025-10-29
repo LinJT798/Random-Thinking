@@ -191,31 +191,62 @@ export class SupabaseDB {
   }
 
   async bulkUpsertNodes(userId: string, canvasId: string, nodes: CanvasNode[]): Promise<void> {
-    const insertData: InsertNode[] = nodes.map(node => ({
-      id: node.id,
-      canvas_id: canvasId,
-      user_id: userId,
-      type: node.type,
-      content: node.content,
-      position: node.position,
-      size: node.size,
-      connections: node.connections || [],
-      color: node.color,
-      style: (node.style || {}) as Record<string, unknown>,
-      ai_metadata: node.aiMetadata as Record<string, unknown> | undefined,
-      parent_id: node.parentId,
-      children_ids: node.childrenIds || [],
-      mindmap_metadata: node.mindMapMetadata as Record<string, unknown> | undefined,
-      created_at: new Date(node.createdAt).toISOString(),
-      updated_at: new Date(node.updatedAt).toISOString(),
-    }))
-
-    const { error } = await supabase
+    // 1. 获取云端该画布的所有节点ID
+    const { data: cloudNodes, error: fetchError } = await supabase
       .from('nodes')
-      .upsert(insertData, { onConflict: 'id' })
+      .select('id')
+      .eq('canvas_id', canvasId)
 
-    if (error) {
-      throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
+    if (fetchError) {
+      throw new Error(`Supabase error fetching nodes: ${fetchError.message || JSON.stringify(fetchError)}`)
+    }
+
+    // 2. 找出需要删除的节点（云端有但本地没有的）
+    const localNodeIds = new Set(nodes.map(n => n.id))
+    const cloudNodeIds = cloudNodes?.map(n => n.id) || []
+    const nodesToDelete = cloudNodeIds.filter(id => !localNodeIds.has(id))
+
+    // 3. 删除云端多余的节点
+    if (nodesToDelete.length > 0) {
+      console.log(`🗑️ Deleting ${nodesToDelete.length} nodes from cloud`)
+      const { error: deleteError } = await supabase
+        .from('nodes')
+        .delete()
+        .in('id', nodesToDelete)
+
+      if (deleteError) {
+        throw new Error(`Supabase error deleting nodes: ${deleteError.message || JSON.stringify(deleteError)}`)
+      }
+    }
+
+    // 4. Upsert 本地节点到云端
+    if (nodes.length > 0) {
+      const insertData: InsertNode[] = nodes.map(node => ({
+        id: node.id,
+        canvas_id: canvasId,
+        user_id: userId,
+        type: node.type,
+        content: node.content,
+        position: node.position,
+        size: node.size,
+        connections: node.connections || [],
+        color: node.color,
+        style: (node.style || {}) as Record<string, unknown>,
+        ai_metadata: node.aiMetadata as Record<string, unknown> | undefined,
+        parent_id: node.parentId,
+        children_ids: node.childrenIds || [],
+        mindmap_metadata: node.mindMapMetadata as Record<string, unknown> | undefined,
+        created_at: new Date(node.createdAt).toISOString(),
+        updated_at: new Date(node.updatedAt).toISOString(),
+      }))
+
+      const { error } = await supabase
+        .from('nodes')
+        .upsert(insertData, { onConflict: 'id' })
+
+      if (error) {
+        throw new Error(`Supabase error upserting nodes: ${error.message || JSON.stringify(error)}`)
+      }
     }
   }
 
