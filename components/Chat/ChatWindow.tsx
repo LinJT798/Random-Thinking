@@ -793,7 +793,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                     return (
                       <div
                         key={index}
-                        className="rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
+                        className="rounded-2xl transition-all duration-300 hover:-translate-y-0.5 px-4 py-3 space-y-3"
                         style={{
                           background: 'linear-gradient(135deg, rgba(198, 200, 170, 0.2) 0%, rgba(139, 142, 99, 0.15) 100%)',
                           border: '1px solid rgba(139, 142, 99, 0.3)',
@@ -802,20 +802,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                         onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 8px 20px rgba(61, 52, 44, 0.12)'}
                         onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(61, 52, 44, 0.08)'}
                       >
-                        {/* 标题栏 - 橄榄绿渐变 */}
-                        <div className="px-4 py-2" style={{
-                          background: 'linear-gradient(90deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.8) 100%)',
-                        }}>
-                          <div className="flex items-center gap-2 text-white">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span className="text-sm font-semibold">AI 操作</span>
-                          </div>
-                        </div>
-
-                        {/* 内容区 */}
-                        <div className="px-4 py-3 space-y-3">
                           {/* 操作详情 */}
                           <div className="flex items-start gap-3">
                             <div className="text-3xl leading-none">{info.icon}</div>
@@ -830,9 +816,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                           </div>
 
                           {/* 操作按钮 */}
-                          <div className="flex items-center gap-2 pt-2" style={{
-                            borderTop: '1px solid rgba(139, 142, 99, 0.15)',
-                          }}>
+                          <div className="flex items-center gap-2">
                             {toolCall.status === 'pending' && (
                               <>
                                 <button
