@@ -270,10 +270,15 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
         {/* 右侧按钮组 */}
         {isSelected && !isEditing && (
           <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
-            {/* 快捷键提示 */}
+            {/* 快捷键提示 - 纸感风格 */}
             {!showPropertyPanel && (
-              <div className="bg-gray-800/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 shadow-lg">
-                <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Z</kbd>
+              <div className="text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 glass-effect" style={{
+                background: '#3D342C',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+              }}>
+                <kbd className="px-1.5 py-0.5 rounded text-[9px]" style={{
+                  background: 'rgba(255, 255, 255, 0.25)',
+                }}>Z</kbd>
                 <span>属性</span>
               </div>
             )}
