@@ -254,10 +254,10 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
       {/* 右侧按钮组 */}
       {isSelected && !isEditing && (
         <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
-          {/* 快捷键提示 - 纸感风格 */}
+          {/* 快捷键提示 - 橄榄绿 */}
           {!showPropertyPanel && (
             <div className="text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 glass-effect" style={{
-              background: '#3D342C',
+              background: '#8B8E63',
               border: '1px solid rgba(255, 255, 255, 0.2)',
             }}>
               <kbd className="px-1.5 py-0.5 rounded text-[9px]" style={{

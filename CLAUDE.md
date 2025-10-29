@@ -4,12 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🚨 Important Development Rules
 
-**Git Push Policy**:
-- **NEVER** push code to remote repository unless the user **explicitly** asks you to push
-- Always commit changes locally first
-- Wait for user confirmation before pushing
-- When user says "push" or "push it" or similar explicit request, then you can push
-- This prevents unwanted changes from being published to the remote repository
+**Git Push Policy - CRITICAL**:
+- ⛔ **NEVER EVER** push code to remote repository without explicit user permission
+- ⛔ **DO NOT** automatically push after committing
+- ⛔ **DO NOT** push even if the feature seems complete
+- ✅ **ALWAYS** commit changes locally first
+- ✅ **ALWAYS** wait for user to say "push" or "push it" before pushing
+- ✅ **ONLY** push when user explicitly requests: "push", "push code", "push it", "提交代码" etc.
+- This is a **STRICT** rule - violating it causes problems for the user
+- The user wants to review changes before they go to remote repository
 
 ## Project Overview
 
