@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
           contextMessages.push({
             role: 'assistant',
-            content: msg.content || null,
+            content: msg.content && msg.content.trim() ? msg.content : null,
             tool_calls: msg.toolCalls.map(tc => ({
               id: tc.tool_use_id,
               type: 'function' as const,
@@ -124,17 +124,22 @@ export async function POST(request: NextRequest) {
             }))
           });
         } else if (msg.role === 'tool') {
-          // tool 消息需要包含 tool_call_id
-          contextMessages.push({
-            role: 'tool',
-            tool_call_id: msg.tool_call_id,
-            content: msg.content
-          });
+          // tool 消息需要包含 tool_call_id 和非空内容
+          if (msg.content && msg.content.trim()) {
+            contextMessages.push({
+              role: 'tool',
+              tool_call_id: msg.tool_call_id,
+              content: msg.content
+            });
+          }
         } else {
-          contextMessages.push({
-            role: msg.role,
-            content: msg.content
-          });
+          // 普通消息：过滤掉空内容
+          if (msg.content && msg.content.trim()) {
+            contextMessages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
         }
       }
     });
