@@ -5,7 +5,7 @@ import { calculateMindMapLayout, getAllDescendantIds } from './mindmap-layout';
 import { generateUUID } from './uuid';
 
 // 延迟导入 syncManager 避免循环依赖
-let syncManager: any = null;
+let syncManager: { debouncedSyncCanvas: (canvasId: string) => void; immediateSyncCanvas: (canvasId: string) => Promise<void> } | null = null;
 if (typeof window !== 'undefined') {
   import('./sync-manager').then(module => {
     syncManager = module.syncManager;

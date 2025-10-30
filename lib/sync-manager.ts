@@ -126,9 +126,9 @@ export class SyncManager {
           try {
             await supabaseDB.createCanvas(this.userId, localCanvas.name, canvasId)
             console.log(`Created canvas ${canvasId} in cloud`)
-          } catch (createError: any) {
+          } catch (createError: unknown) {
             // 如果是主键冲突，说明画布其实存在，忽略错误
-            if (createError.message?.includes('duplicate key')) {
+            if (createError instanceof Error && createError.message?.includes('duplicate key')) {
               console.warn(`⚠️ 画布 ${canvasId} 已存在，跳过创建`)
             } else {
               throw createError

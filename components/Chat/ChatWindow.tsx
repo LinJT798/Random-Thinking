@@ -645,7 +645,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
               type="text"
               value={titleInput}
               onChange={(e) => setTitleInput(e.target.value)}
-              onBlur={handleSaveTitle}
               onKeyDown={handleTitleKeyDown}
               className="flex-1 font-semibold rounded px-2 py-0.5 text-sm focus:outline-none"
               style={{
