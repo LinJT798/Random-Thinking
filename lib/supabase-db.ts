@@ -197,31 +197,40 @@ export class SupabaseDB {
   }
 
   async bulkUpsertNodes(userId: string, canvasId: string, nodes: CanvasNode[]): Promise<void> {
-    // 1. 获取云端该画布的所有节点ID
-    const { data: cloudNodes, error: fetchError } = await supabase
-      .from('nodes')
-      .select('id')
-      .eq('canvas_id', canvasId)
+    // 1. 尝试获取云端该画布的所有节点ID（网络错误时跳过删除步骤）
+    let cloudNodeIds: string[] = []
+    try {
+      const { data: cloudNodes, error: fetchError } = await supabase
+        .from('nodes')
+        .select('id')
+        .eq('canvas_id', canvasId)
 
-    if (fetchError) {
-      throw new Error(`Supabase error fetching nodes: ${fetchError.message || JSON.stringify(fetchError)}`)
+      if (fetchError) {
+        console.warn(`⚠️ 无法获取云端节点列表（网络问题），跳过删除步骤，仅上传节点`)
+      } else {
+        cloudNodeIds = cloudNodes?.map(n => n.id) || []
+      }
+    } catch (e) {
+      console.warn(`⚠️ 获取云端节点时出错，跳过删除步骤`)
     }
 
     // 2. 找出需要删除的节点（云端有但本地没有的）
-    const localNodeIds = new Set(nodes.map(n => n.id))
-    const cloudNodeIds = cloudNodes?.map(n => n.id) || []
-    const nodesToDelete = cloudNodeIds.filter(id => !localNodeIds.has(id))
+    if (cloudNodeIds.length > 0) {
+      const localNodeIds = new Set(nodes.map(n => n.id))
+      const nodesToDelete = cloudNodeIds.filter(id => !localNodeIds.has(id))
 
-    // 3. 删除云端多余的节点
-    if (nodesToDelete.length > 0) {
-      console.log(`🗑️ Deleting ${nodesToDelete.length} nodes from cloud`)
-      const { error: deleteError } = await supabase
-        .from('nodes')
-        .delete()
-        .in('id', nodesToDelete)
+      // 3. 删除云端多余的节点
+      if (nodesToDelete.length > 0) {
+        console.log(`🗑️ Deleting ${nodesToDelete.length} nodes from cloud`)
+        const { error: deleteError } = await supabase
+          .from('nodes')
+          .delete()
+          .in('id', nodesToDelete)
 
-      if (deleteError) {
-        throw new Error(`Supabase error deleting nodes: ${deleteError.message || JSON.stringify(deleteError)}`)
+        if (deleteError) {
+          console.warn(`⚠️ 删除云端节点失败:`, deleteError.message)
+          // 不抛出错误，继续尝试 upsert
+        }
       }
     }
 
