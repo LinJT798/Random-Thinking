@@ -658,7 +658,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
               }}
               onBlur={(e) => {
                 e.currentTarget.style.outline = 'none';
-                handleSaveTitle(e);
+                handleSaveTitle();
               }}
               onMouseDown={(e) => e.stopPropagation()}
             />
