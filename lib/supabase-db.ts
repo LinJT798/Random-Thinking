@@ -269,7 +269,12 @@ export class SupabaseDB {
         .upsert(insertData, { onConflict: 'id' })
 
       if (error) {
-        throw new Error(`Supabase error upserting nodes: ${error.message || JSON.stringify(error)}`)
+        // 网络错误时不抛出异常，只警告
+        console.error(`❌ Supabase error upserting nodes: ${error.message || JSON.stringify(error)}`)
+        console.warn(`⚠️ 节点上传失败，但本地数据已保存。下次同步时会重试。`)
+        // 不抛出错误，应用继续工作
+      } else {
+        console.log(`✅ 成功上传 ${insertData.length} 个节点到云端`)
       }
     }
   }
