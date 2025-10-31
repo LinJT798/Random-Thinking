@@ -27,10 +27,65 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
 
   const { nodes, loadCanvas, selectedNodeIds, selectNode, clearSelection, addNode, undo, redo, chatSessions, draggingText, setDraggingText, dockedChatId, dockedWidth } = useCanvasStore();
 
+  // 居中显示所有节点
+  const centerAllNodes = useCallback(() => {
+    if (nodes.length === 0) {
+      // 没有节点，重置到原点
+      setZoom(1);
+      setViewportOffset({ x: 0, y: 0 });
+      return;
+    }
+
+    // 计算所有节点的边界框
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    nodes.forEach(node => {
+      const nodeLeft = node.position.x;
+      const nodeTop = node.position.y;
+      const nodeRight = node.position.x + node.size.width;
+      const nodeBottom = node.position.y + node.size.height;
+
+      minX = Math.min(minX, nodeLeft);
+      minY = Math.min(minY, nodeTop);
+      maxX = Math.max(maxX, nodeRight);
+      maxY = Math.max(maxY, nodeBottom);
+    });
+
+    // 计算节点群的中心点（画布坐标）
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    // 计算视口大小（考虑分屏）
+    const viewportWidth = dockedChatId
+      ? window.innerWidth * (100 - dockedWidth) / 100
+      : window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // 移动视口，使节点中心在屏幕中央
+    const newOffsetX = viewportWidth / 2 - centerX * zoom;
+    const newOffsetY = viewportHeight / 2 - centerY * zoom;
+
+    setViewportOffset({ x: newOffsetX, y: newOffsetY });
+  }, [nodes, zoom, dockedChatId, dockedWidth]);
+
   // 加载画布数据
   useEffect(() => {
     loadCanvas(canvasId);
   }, [canvasId, loadCanvas]);
+
+  // 画布切换后自动居中（监听 canvasId 和 nodes 变化）
+  const prevCanvasIdRef = useRef(canvasId);
+  useEffect(() => {
+    // 检测到画布切换
+    if (prevCanvasIdRef.current !== canvasId && nodes.length > 0) {
+      prevCanvasIdRef.current = canvasId;
+      // 延迟一帧，确保节点已渲染
+      requestAnimationFrame(() => {
+        centerAllNodes();
+      });
+    }
+  }, [canvasId, nodes.length, centerAllNodes]);
 
   // 全局快捷键监听
   useEffect(() => {
@@ -331,46 +386,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
         </button>
         <div className="w-10 border-t my-1" style={{ borderColor: 'rgba(122, 111, 103, 0.2)' }} />
         <button
-          onClick={() => {
-            if (nodes.length === 0) {
-              // 没有节点，重置到原点
-              setZoom(1);
-              setViewportOffset({ x: 0, y: 0 });
-              return;
-            }
-
-            // 计算所有节点的边界框
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
-
-            nodes.forEach(node => {
-              const nodeLeft = node.position.x;
-              const nodeTop = node.position.y;
-              const nodeRight = node.position.x + node.size.width;
-              const nodeBottom = node.position.y + node.size.height;
-
-              minX = Math.min(minX, nodeLeft);
-              minY = Math.min(minY, nodeTop);
-              maxX = Math.max(maxX, nodeRight);
-              maxY = Math.max(maxY, nodeBottom);
-            });
-
-            // 计算节点群的中心点（画布坐标）
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-
-            // 计算视口大小（考虑分屏）
-            const viewportWidth = dockedChatId
-              ? window.innerWidth * (100 - dockedWidth) / 100
-              : window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            // 移动视口，使节点中心在屏幕中央
-            const newOffsetX = viewportWidth / 2 - centerX * zoom;
-            const newOffsetY = viewportHeight / 2 - centerY * zoom;
-
-            setViewportOffset({ x: newOffsetX, y: newOffsetY });
-          }}
+          onClick={centerAllNodes}
           className="w-10 h-10 flex items-center justify-center rounded-lg transition-all elastic-transition"
           style={{ color: '#7A6F67' }}
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)'}
