@@ -214,3 +214,14 @@ html, body {
     );
   opacity: 1;
 }
+
+/* 隐藏聊天窗口滚动条 */
+.chat-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.chat-content {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}

@@ -275,6 +275,104 @@ components/
 └── DraggingTextBubble.tsx # Visual feedback for text drag-to-create
 ```
 
+### Design System
+
+The application follows a carefully crafted **Natural Paper Theme** (自然纸感配色方案) defined in `app/globals.css`.
+
+#### Color Palette
+
+**🎨 Core Colors** (defined as CSS custom properties):
+
+| Purpose | CSS Variable | Hex Value | Description |
+|---------|-------------|-----------|-------------|
+| Main Background | `--color-warm-ivory` | `#F8F4EF` | Warm ivory / light beige |
+| Secondary Background | `--color-parchment` | `#EDE4D5` | Parchment paper color |
+| Primary Text | `--color-coffee-brown` | `#3D342C` | Deep coffee brown |
+| Secondary Text | `--color-taupe-gray` | `#7A6F67` | Taupe gray |
+| Accent | `--color-olive-mist` | `#8B8E63` | Olive mist green |
+| Secondary Accent | `--color-caramel-clay` | `#B4723C` | Caramel clay |
+| Highlight | `--color-sage` | `#C6C8AA` | Sage green |
+
+#### Visual Effects
+
+**Pre-defined CSS Classes** (must be used consistently):
+
+- **`.glass-effect`** - 3D glass edge effect with subtle shadows and highlights
+  - Creates elevated appearance with light source from top
+  - Used for buttons, toolbars, dropdowns
+
+- **`.paper-texture`** - Paper texture background for main canvas areas
+  - SVG noise filter + horizontal/vertical paper grain
+
+- **`.paper-texture-light`** - Lighter paper texture for individual nodes
+  - Enhanced noise with subtle horizontal lines
+
+- **`.elastic-transition`** - Smooth elastic easing animation
+  - Cubic bezier: `cubic-bezier(0.16, 1, 0.3, 1)`
+
+- **`.dropdown-animate-in`** / **`.dropdown-animate-out`** - Smooth dropdown animations
+  - Slide down with scale effect
+
+- **`.bubble-animate-in`** - Chat bubble entrance animation
+  - Scale up with slight upward motion
+
+#### Development Rules - Design Consistency
+
+When creating or modifying UI components, **STRICTLY FOLLOW** these rules:
+
+⛔ **DO NOT**:
+- Use custom colors not in the palette
+- Use arbitrary hex values or RGB colors
+- Create custom shadows or borders without using `.glass-effect`
+- Use different corner radii (must use `rounded-2xl` for consistency)
+- Skip animation classes for interactive elements
+
+✅ **MUST DO**:
+- Always use CSS variables from `app/globals.css` for colors
+- Apply `.glass-effect` to elevated UI elements (buttons, panels, dropdowns)
+- Use `rounded-2xl` for consistent corner rounding
+- Apply paper texture classes to appropriate surfaces
+- Use predefined animation classes for transitions
+- Reference existing components for style patterns
+
+#### Common Style Patterns
+
+**Buttons/Toolbars**:
+```tsx
+className="glass-effect rounded-2xl"
+style={{
+  background: '#EDE4D5',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  color: '#3D342C'
+}}
+```
+
+**Dropdown Menus**:
+```tsx
+className="glass-effect rounded-2xl dropdown-animate-in"
+style={{
+  background: '#EDE4D5',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+}}
+```
+
+**Text Nodes**:
+```tsx
+className="paper-texture-light rounded-2xl"
+style={{
+  background: '#F8F4EF',
+  border: '1px solid #EDE4D5',
+  color: '#3D342C'
+}}
+```
+
+**Authentication Pages**:
+- Must use warm ivory background (`#F8F4EF`)
+- Forms should have parchment background (`#EDE4D5`) with `.glass-effect`
+- All text should be coffee brown (`#3D342C`)
+- Input fields should have paper texture
+- Buttons must follow the standard button pattern above
+
 ### Layout System
 
 Mind map auto-layout is handled in `lib/mindmap-layout.ts`:

@@ -35,8 +35,8 @@ export default function CanvasToolbar() {
     });
   };
 
-  // 添加思维导图
-  const handleAddMindMap = async () => {
+  // 添加思维导图（暂时禁用）
+  /* const handleAddMindMap = async () => {
     const x = Math.random() * 500 + 100;
     const y = Math.random() * 500 + 100;
 
@@ -54,7 +54,7 @@ export default function CanvasToolbar() {
         layoutType: 'horizontal',
       },
     });
-  };
+  }; */
 
   return (
     <div className="absolute top-6 right-6 z-[2000]">
@@ -72,7 +72,7 @@ export default function CanvasToolbar() {
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            className="min-w-[200px] rounded-2xl p-2 glass-effect z-[2100] dropdown-animate-in"
+            className="min-w-[120px] rounded-2xl p-2 glass-effect z-[2100] dropdown-animate-in"
             style={{
               background: '#EDE4D5',
               border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -83,9 +83,9 @@ export default function CanvasToolbar() {
           >
             <DropdownMenu.Item
               onClick={handleAddTextNode}
-              className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2 stagger-item"
+              className="px-3 py-2 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-1.5 stagger-item"
               style={{
-                background: 'linear-gradient(135deg, rgba(139, 142, 99, 0.9) 0%, rgba(198, 200, 170, 0.85) 100%)',
+                background: '#8B8E63',
                 boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',
               }}
             >
@@ -97,9 +97,9 @@ export default function CanvasToolbar() {
 
             <DropdownMenu.Item
               onClick={handleAddSticky}
-              className="px-4 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none mb-2 stagger-item"
+              className="px-3 py-2 rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none stagger-item"
               style={{
-                background: 'rgba(251, 191, 36, 0.9)',
+                background: '#FBBF24',
                 color: '#3D342C',
                 boxShadow: '0 2px 8px rgba(61, 52, 44, 0.1)',
               }}
@@ -110,7 +110,8 @@ export default function CanvasToolbar() {
               <span>便签</span>
             </DropdownMenu.Item>
 
-            <DropdownMenu.Item
+            {/* 思维导图按钮（暂时禁用） */}
+            {/* <DropdownMenu.Item
               onClick={handleAddMindMap}
               className="px-4 py-2.5 text-white rounded-xl transition-all text-sm flex items-center gap-2 font-medium cursor-pointer outline-none stagger-item"
               style={{
@@ -123,7 +124,7 @@ export default function CanvasToolbar() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
               </svg>
               <span>思维导图</span>
-            </DropdownMenu.Item>
+            </DropdownMenu.Item> */}
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

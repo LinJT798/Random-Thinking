@@ -71,8 +71,8 @@ interface CanvasStore {
 
   // 聊天方法
   createChatSession: () => string;
-  openChatSession: (chatId: string) => void;
-  closeChatSession: (chatId: string) => void;
+  openChatSession: (chatId: string) => Promise<void>;
+  closeChatSession: (chatId: string) => Promise<void>;
   toggleChatList: () => void;
   switchChat: (chatId: string) => void;
   deleteChatSession: (chatId: string) => Promise<void>;
@@ -128,7 +128,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const canvas = await db.getCanvas(canvasId);
       if (canvas) {
         const nodes = await db.getCanvasNodes(canvasId);
-        const chatSessions = await db.getChatSessions(canvasId);
+        let chatSessions = await db.getChatSessions(canvasId);
 
         // 从 localStorage 恢复分屏状态
         let dockedChatId = null;
@@ -144,6 +144,19 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             } catch (e) {
               console.warn('Failed to parse docked state:', e);
             }
+          }
+        }
+
+        // 如果恢复了分屏状态，确保对应的聊天会话是打开的
+        if (dockedChatId) {
+          const dockedSession = chatSessions.find(s => s.id === dockedChatId);
+          if (dockedSession && !dockedSession.isOpen) {
+            console.log(`设置分屏聊天会话 ${dockedChatId} 为打开状态`);
+            chatSessions = chatSessions.map(s =>
+              s.id === dockedChatId ? { ...s, isOpen: true } : s
+            );
+            // 同步更新到数据库
+            await db.updateChatSession({ ...dockedSession, isOpen: true });
           }
         }
 
@@ -510,27 +523,45 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   // 打开聊天会话
-  openChatSession: (chatId) => {
+  openChatSession: async (chatId) => {
     const { chatSessions } = get();
+    const updatedSessions = chatSessions.map(session =>
+      session.id === chatId ? { ...session, isOpen: true } : session
+    );
+
     set({
-      chatSessions: chatSessions.map(session =>
-        session.id === chatId ? { ...session, isOpen: true } : session
-      ),
+      chatSessions: updatedSessions,
       currentChatId: chatId,
     });
+
+    // 持久化到数据库
+    const session = updatedSessions.find(s => s.id === chatId);
+    if (session) {
+      await db.updateChatSession(chatId, { isOpen: true });
+    }
   },
 
   // 关闭聊天会话
-  closeChatSession: (chatId) => {
-    const { chatSessions, currentChatId, dockedChatId } = get();
+  closeChatSession: async (chatId) => {
+    const { chatSessions, currentChatId, dockedChatId, currentCanvasId } = get();
+    const updatedSessions = chatSessions.map(session =>
+      session.id === chatId ? { ...session, isOpen: false } : session
+    );
+
     set({
-      chatSessions: chatSessions.map(session =>
-        session.id === chatId ? { ...session, isOpen: false } : session
-      ),
+      chatSessions: updatedSessions,
       currentChatId: currentChatId === chatId ? null : currentChatId,
       // 如果关闭的窗口处于分屏模式，退出分屏
       dockedChatId: dockedChatId === chatId ? null : dockedChatId,
     });
+
+    // 持久化到数据库
+    await db.updateChatSession(chatId, { isOpen: false });
+
+    // 如果关闭的是分屏窗口，清除 localStorage 中的分屏状态
+    if (dockedChatId === chatId && currentCanvasId && typeof window !== 'undefined') {
+      localStorage.removeItem(`canvas_${currentCanvasId}_docked_state`);
+    }
   },
 
   // 切换聊天列表展开状态

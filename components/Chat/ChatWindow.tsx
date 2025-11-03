@@ -39,6 +39,9 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const [titleInput, setTitleInput] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
+  // 滚动控制状态：每次发送消息后只自动滚动一次
+  const shouldAutoScrollRef = useRef(false);
+
   // 文本选中功能
   const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
 
@@ -79,14 +82,16 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     }
   }, [isEditingTitle]);
 
-  // 自动滚动到最新消息（防止页面滚动）
+  // 简单滚动逻辑：发送消息后只自动滚动一次
   useEffect(() => {
-    if (session) {
+    if (shouldAutoScrollRef.current && session) {
       messagesEndRef.current?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
         inline: 'nearest'
       });
+      // 滚动一次后立即禁用
+      shouldAutoScrollRef.current = false;
     }
   }, [session, session?.messages, streamingMessage]);
 
@@ -94,8 +99,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const handleToolCall = async (toolName: string, input: Record<string, unknown>): Promise<string[]> => {
     const toolLabels: Record<string, string> = {
       'add_text_node': '正在创建文本框...',
-      'add_sticky_note': '正在创建便签...',
-      'create_mindmap': '正在创建思维导图...'
+      'add_sticky_note': '正在创建便签...'
+      // 'create_mindmap': '正在创建思维导图...' // 暂时禁用
     };
 
     setToolCallStatus(toolLabels[toolName] || '正在执行操作...');
@@ -146,7 +151,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           break;
         }
 
-        case 'create_mindmap': {
+        // 思维导图功能（暂时禁用）
+        /* case 'create_mindmap': {
           // 思维导图会展开，预留超大空间
           const position = findNonOverlappingPosition({
             width: 2000,
@@ -176,7 +182,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             .map(n => n.id);
           createdNodeIds.push(...newNodeIds);
           break;
-        }
+        } */
       }
 
       setTimeout(() => setToolCallStatus(''), 1000);
@@ -261,8 +267,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 // 添加工具调用反馈到消息中
                 const toolNames: Record<string, string> = {
                   'add_text_node': '已创建文本框',
-                  'add_sticky_note': '已创建便签',
-                  'create_mindmap': '已创建思维导图'
+                  'add_sticky_note': '已创建便签'
+                  // 'create_mindmap': '已创建思维导图' // 暂时禁用
                 };
                 fullMessage += `✨ ${toolNames[parsed.tool] || '已执行操作'}`;
                 setStreamingMessage(fullMessage);
@@ -302,10 +308,14 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     setInputRows(1); // 重置为1行
     setIsLoading(true);
     setStreamingMessage('');
+    shouldAutoScrollRef.current = true; // 发送新消息时，启用一次自动滚动
 
     try {
       // 添加用户消息（只保存用户输入的文本，引用作为独立字段）
       await addChatMessage(chatId, 'user', userMessage, currentReferences.length > 0 ? currentReferences : undefined);
+
+      // 发送后立即清除引用
+      clearChatReferences(chatId);
 
       // 检测节点变化
       const nodeChanges = detectNodeChanges(nodes, session.initialNodeSnapshot, session.startTimestamp);
@@ -337,8 +347,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         for (const toolCall of toolCallsList) {
           const toolNames: Record<string, string> = {
             'add_text_node': '文本框',
-            'add_sticky_note': '便签',
-            'create_mindmap': '思维导图'
+            'add_sticky_note': '便签'
+            // 'create_mindmap': '思维导图' // 暂时禁用
           };
 
           await addChatMessage(
@@ -389,8 +399,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       }
 
       setStreamingMessage('');
-      // 清空引用
-      clearChatReferences(chatId);
     } catch (error) {
       console.error('Error sending message:', error);
       // 可以添加错误提示
@@ -789,8 +797,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                     // 工具类型映射
                     const toolInfo: Record<string, { icon: string; name: string; description: string }> = {
                       'add_text_node': { icon: '📝', name: '文本框', description: '创建了文本框' },
-                      'add_sticky_note': { icon: '📌', name: '便签', description: '创建了便签' },
-                      'create_mindmap': { icon: '🧠', name: '思维导图', description: '创建了思维导图' }
+                      'add_sticky_note': { icon: '📌', name: '便签', description: '创建了便签' }
+                      // 'create_mindmap': { icon: '🧠', name: '思维导图', description: '创建了思维导图' } // 暂时禁用
                     };
 
                     const info = toolInfo[toolCall.tool] || { icon: '✨', name: '节点', description: '执行了操作' };
