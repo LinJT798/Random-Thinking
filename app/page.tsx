@@ -6,6 +6,7 @@ import Canvas from '@/components/Canvas/Canvas';
 import CanvasToolbar from '@/components/Canvas/CanvasToolbar';
 import DraggingTextBubble from '@/components/DraggingTextBubble';
 import ChatResizer from '@/components/Chat/ChatResizer';
+import Onboarding from '@/components/Onboarding';
 import { initDatabase } from '@/lib/db';
 import { useCanvasStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -17,6 +18,7 @@ export default function Home() {
   const [isReady, setIsReady] = useState(false);
   const [canvasId, setCanvasId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatusType>('idle');
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const initializingRef = useRef(false);
@@ -104,6 +106,12 @@ export default function Home() {
         setIsReady(true);
         initializedRef.current = true;
         console.log('Initialization completed');
+
+        // 检查是否是第一次登录，显示新手引导
+        const hasSeenOnboarding = localStorage.getItem('onboarding_completed');
+        if (!hasSeenOnboarding) {
+          setShowOnboarding(true);
+        }
       } catch (error) {
         console.error('Failed to initialize:', error);
         toast.error('初始化失败，请刷新页面重试');
@@ -164,10 +172,20 @@ export default function Home() {
   return (
     <div className="h-screen w-screen overflow-hidden">
       {/* 全屏画布 */}
-      <Canvas canvasId={canvasId} syncStatus={syncStatus} />
+      <Canvas
+        canvasId={canvasId}
+        syncStatus={syncStatus}
+        onOpenOnboarding={() => setShowOnboarding(true)}
+      />
       <CanvasToolbar />
       <DraggingTextBubble />
       <ChatResizer />
+
+      {/* 新手引导 */}
+      <Onboarding
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
     </div>
   );
 }

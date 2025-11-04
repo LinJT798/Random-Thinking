@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 
-export default function HelpButton() {
+interface HelpButtonProps {
+  onOpenOnboarding?: () => void;
+}
+
+export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -107,6 +111,28 @@ export default function HelpButton() {
               </div>
             </div>
           </div>
+
+          {/* 底部操作按钮 */}
+          {onOpenOnboarding && (
+            <div className="mt-6 pt-4" style={{
+              borderTop: '1px solid rgba(122, 111, 103, 0.15)'
+            }}>
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  onOpenOnboarding();
+                }}
+                className="w-full py-2.5 rounded-xl transition-all elastic-transition glass-effect"
+                style={{
+                  background: '#B4723C',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)'
+                }}
+              >
+                查看新手引导
+              </button>
+            </div>
+          )}
 
           <Dialog.Close asChild>
             <button

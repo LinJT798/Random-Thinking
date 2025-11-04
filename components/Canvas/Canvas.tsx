@@ -16,9 +16,10 @@ import type { SyncStatus as SyncStatusType } from '@/lib/sync-manager';
 interface CanvasProps {
   canvasId: string;
   syncStatus: SyncStatusType;
+  onOpenOnboarding?: () => void;
 }
 
-export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
+export default function Canvas({ canvasId, syncStatus, onOpenOnboarding }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [viewportOffset, setViewportOffset] = useState<Position>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -413,7 +414,7 @@ export default function Canvas({ canvasId, syncStatus }: CanvasProps) {
 
       {/* 左上角按钮 - 独立定位，最高层级 */}
       <div className="absolute top-6 left-6 z-[2000]">
-        <SettingsMenu syncStatus={syncStatus} />
+        <SettingsMenu syncStatus={syncStatus} onOpenOnboarding={onOpenOnboarding} />
       </div>
       <div className="absolute top-6 left-20 z-[2000]">
         <ChatButton />

@@ -10,9 +10,10 @@ import type { SyncStatus as SyncStatusType } from '@/lib/sync-manager';
 
 interface SettingsMenuProps {
   syncStatus: SyncStatusType;
+  onOpenOnboarding?: () => void;
 }
 
-export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
+export default function SettingsMenu({ syncStatus, onOpenOnboarding }: SettingsMenuProps) {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -258,6 +259,28 @@ export default function SettingsMenu({ syncStatus }: SettingsMenuProps) {
                 </div>
               </div>
             </div>
+
+            {/* 新手引导按钮 */}
+            {onOpenOnboarding && (
+              <div className="mt-6 pt-4" style={{
+                borderTop: '1px solid rgba(122, 111, 103, 0.15)'
+              }}>
+                <button
+                  onClick={() => {
+                    setHelpOpen(false);
+                    onOpenOnboarding();
+                  }}
+                  className="w-full py-2.5 rounded-xl transition-all elastic-transition glass-effect"
+                  style={{
+                    background: '#B4723C',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                >
+                  查看新手引导
+                </button>
+              </div>
+            )}
 
             <Dialog.Close asChild>
               <button
