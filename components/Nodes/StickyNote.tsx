@@ -209,7 +209,7 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     <div
       ref={nodeRef}
       className={`
-        absolute select-none p-4
+        absolute select-none p-1.5
         ${isDragging ? 'opacity-70 cursor-move' : 'cursor-move'}
         ${isResizing ? 'cursor-nwse-resize' : ''}
       `}

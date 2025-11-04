@@ -224,7 +224,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
       onDoubleClick={handleDoubleClick}
     >
       <div
-        className="h-full p-4 rounded-xl transition-all"
+        className="h-full p-1.5 rounded-xl transition-all"
         style={{
           backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'transparent',
           boxShadow: backgroundColor !== 'transparent' ? '0 4px 12px rgba(61, 52, 44, 0.08)' : 'none',
