@@ -156,7 +156,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
               s.id === dockedChatId ? { ...s, isOpen: true } : s
             );
             // 同步更新到数据库
-            await db.updateChatSession({ ...dockedSession, isOpen: true });
+            await db.updateChatSession(dockedChatId, { ...dockedSession, isOpen: true });
           }
         }
 

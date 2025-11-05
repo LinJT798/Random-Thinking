@@ -1,5 +1,6 @@
 import { supabaseDB } from './supabase-db'
 import { db } from './db'
+import { ensureValidSession } from './supabase'
 import type { CanvasData, CanvasNode } from '@/types'
 
 /**
@@ -50,6 +51,13 @@ export class SyncManager {
     this.updateStatus('syncing')
 
     try {
+      // 确保会话有效
+      const sessionValid = await ensureValidSession()
+      if (!sessionValid) {
+        this.updateStatus('error')
+        console.error('❌ 会话无效或已过期，无法同步。请重新登录。')
+        return
+      }
       // 1. 获取本地所有画布
       const localCanvases = await db.getAllCanvases()
 
@@ -102,6 +110,13 @@ export class SyncManager {
     if (!this.userId) return
 
     try {
+      // 确保会话有效（静默检查，不影响用户体验）
+      const sessionValid = await ensureValidSession()
+      if (!sessionValid) {
+        console.warn('⚠️ 会话无效，跳过云端同步（本地数据已保存）')
+        this.addToOfflineQueue({ type: 'sync_canvas', canvasId })
+        return
+      }
       const localCanvas = await db.getCanvas(canvasId)
       if (!localCanvas) return
 

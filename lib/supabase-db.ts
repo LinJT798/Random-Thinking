@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, ensureValidSession } from './supabase'
 import type { CanvasData, CanvasNode, ChatSession } from '@/types'
 import type { InsertCanvas, InsertNode, InsertChatSession } from '@/types/database.types'
 import { generateUUID } from './uuid'
@@ -9,11 +9,23 @@ import { generateUUID } from './uuid'
  */
 
 export class SupabaseDB {
+  /**
+   * 在执行数据库操作前检查并刷新会话（如果需要）
+   */
+  private async checkSession(): Promise<boolean> {
+    const isValid = await ensureValidSession()
+    if (!isValid) {
+      console.error('❌ 会话无效或已过期，请重新登录')
+    }
+    return isValid
+  }
   // ========================================
   // 画布操作
   // ========================================
 
   async createCanvas(userId: string, name: string, id?: string): Promise<string> {
+    await this.checkSession()
+
     const canvas: InsertCanvas = {
       id: id, // 允许指定 ID，用于同步
       user_id: userId,
@@ -34,6 +46,8 @@ export class SupabaseDB {
   }
 
   async getAllCanvases(userId: string): Promise<CanvasData[]> {
+    await this.checkSession()
+
     const { data, error } = await supabase
       .from('canvases')
       .select('*')
@@ -63,6 +77,8 @@ export class SupabaseDB {
   }
 
   async getCanvas(canvasId: string): Promise<CanvasData | null> {
+    await this.checkSession()
+
     const { data, error } = await supabase
       .from('canvases')
       .select('*')
@@ -197,6 +213,13 @@ export class SupabaseDB {
   }
 
   async bulkUpsertNodes(userId: string, canvasId: string, nodes: CanvasNode[]): Promise<void> {
+    // 0. 确保会话有效
+    const sessionValid = await this.checkSession()
+    if (!sessionValid) {
+      console.warn('⚠️ 会话无效，跳过节点上传（本地数据已保存）')
+      return // 不抛出错误，让应用继续工作
+    }
+
     // 1. 尝试获取云端该画布的所有节点ID（网络错误时跳过删除步骤）
     let cloudNodeIds: string[] = []
     try {
@@ -284,6 +307,8 @@ export class SupabaseDB {
   // ========================================
 
   async saveChatSession(userId: string, canvasId: string, session: ChatSession): Promise<void> {
+    await this.checkSession()
+
     const insertData: InsertChatSession = {
       id: session.id,
       canvas_id: canvasId,
