@@ -21,6 +21,10 @@ export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
     const stopEvent = (e: Event) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
+      // 对于滚动事件，额外阻止默认行为
+      if (e.type === 'wheel') {
+        e.preventDefault();
+      }
     };
 
     // 添加原生事件监听器（捕获阶段）
@@ -32,6 +36,8 @@ export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
     element.addEventListener('touchstart', stopEvent, { capture: true, passive: false });
     element.addEventListener('touchmove', stopEvent, { capture: true, passive: false });
     element.addEventListener('touchend', stopEvent, { capture: true });
+    element.addEventListener('keydown', stopEvent, { capture: true });
+    element.addEventListener('keyup', stopEvent, { capture: true });
 
     return () => {
       element.removeEventListener('wheel', stopEvent, { capture: true } as EventListenerOptions);
@@ -42,8 +48,23 @@ export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
       element.removeEventListener('touchstart', stopEvent, { capture: true } as EventListenerOptions);
       element.removeEventListener('touchmove', stopEvent, { capture: true } as EventListenerOptions);
       element.removeEventListener('touchend', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('keydown', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('keyup', stopEvent, { capture: true } as EventListenerOptions);
     };
   }, [open]);
+
+  // React 事件处理器，作为额外的保护层
+  const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -68,10 +89,17 @@ export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in-0" />
+        <Dialog.Overlay
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in-0"
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+        />
         <Dialog.Content
           ref={contentRef}
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6 w-[90vw] max-w-md animate-in fade-in-0 zoom-in-95"
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onKeyDown={handleKeyDown}
         >
           <Dialog.Title className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +108,11 @@ export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
             操作指南
           </Dialog.Title>
 
-          <div className="space-y-3 text-sm text-gray-700">
+          <div
+            className="space-y-3 text-sm text-gray-700 max-h-[60vh] overflow-y-auto"
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+          >
             <div className="space-y-2">
               <h3 className="font-semibold text-gray-900">基本操作</h3>
               <div className="flex items-start gap-3 pl-2">

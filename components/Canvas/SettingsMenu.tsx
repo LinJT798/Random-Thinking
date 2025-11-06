@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Dialog from '@radix-ui/react-dialog';
 import { CanvasSwitcher } from './CanvasSwitcher';
@@ -16,6 +16,40 @@ interface SettingsMenuProps {
 export default function SettingsMenu({ syncStatus, onOpenOnboarding }: SettingsMenuProps) {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const helpContentRef = useRef<HTMLDivElement>(null);
+
+  // 使用原生事件监听器阻止事件穿透到画布
+  useEffect(() => {
+    if (!helpOpen || !helpContentRef.current) return;
+
+    const element = helpContentRef.current;
+
+    const stopEvent = (e: Event) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // 对于滚轮事件，不要阻止默认行为，让内容可以滚动
+      // if (e.type === 'wheel') {
+      //   e.preventDefault();
+      // }
+    };
+
+    // 在捕获阶段拦截所有事件
+    element.addEventListener('wheel', stopEvent, { capture: true, passive: false });
+    element.addEventListener('mousedown', stopEvent, { capture: true });
+    element.addEventListener('mouseup', stopEvent, { capture: true });
+    element.addEventListener('click', stopEvent, { capture: true });
+    element.addEventListener('touchstart', stopEvent, { capture: true, passive: false });
+    element.addEventListener('touchmove', stopEvent, { capture: true, passive: false });
+
+    return () => {
+      element.removeEventListener('wheel', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('mousedown', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('mouseup', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('click', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchstart', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchmove', stopEvent, { capture: true } as EventListenerOptions);
+    };
+  }, [helpOpen]);
 
   return (
     <>
@@ -136,14 +170,26 @@ export default function SettingsMenu({ syncStatus, onOpenOnboarding }: SettingsM
       {/* 帮助对话框 - 纸感风格 */}
       <Dialog.Root open={helpOpen} onOpenChange={setHelpOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 backdrop-blur-sm animate-in fade-in-0 z-[2000]" style={{
-            background: 'rgba(61, 52, 44, 0.3)'
-          }} />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 backdrop-blur-xl rounded-2xl p-6 w-[90vw] max-w-md animate-in fade-in-0 zoom-in-95 z-[2001]" style={{
-            background: 'rgba(237, 228, 213, 0.95)',
-            boxShadow: '0 8px 24px rgba(61, 52, 44, 0.15)',
-            border: '1px solid rgba(122, 111, 103, 0.2)',
-          }}>
+          <Dialog.Overlay
+            className="fixed inset-0 backdrop-blur-sm animate-in fade-in-0 z-[2000]"
+            style={{
+              background: 'rgba(61, 52, 44, 0.3)'
+            }}
+            onWheel={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          />
+          <Dialog.Content
+            ref={helpContentRef}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 backdrop-blur-xl rounded-2xl p-6 w-[90vw] max-w-md animate-in fade-in-0 zoom-in-95 z-[2001]"
+            style={{
+              background: 'rgba(237, 228, 213, 0.95)',
+              boxShadow: '0 8px 24px rgba(61, 52, 44, 0.15)',
+              border: '1px solid rgba(122, 111, 103, 0.2)',
+            }}
+            onWheel={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <Dialog.Title className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: '#3D342C' }}>
               <svg className="w-6 h-6" style={{ color: '#8B8E63' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -151,7 +197,11 @@ export default function SettingsMenu({ syncStatus, onOpenOnboarding }: SettingsM
               操作指南
             </Dialog.Title>
 
-            <div className="space-y-3 text-sm max-h-[60vh] overflow-y-auto" style={{ color: '#3D342C' }}>
+            <div
+              className="space-y-3 text-sm max-h-[60vh] overflow-y-auto"
+              style={{ color: '#3D342C' }}
+              onWheel={(e) => e.stopPropagation()}
+            >
               <div className="space-y-2">
                 <h3 className="font-semibold" style={{ color: '#3D342C' }}>基本操作</h3>
                 <div className="flex items-start gap-3 pl-2">
