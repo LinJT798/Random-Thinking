@@ -111,6 +111,9 @@ export default function Onboarding({ isOpen, onClose }: OnboardingProps) {
           }}
           onPointerDownOutside={(e) => e.preventDefault()} // 禁止点击外部关闭
           onEscapeKeyDown={(e) => e.preventDefault()} // 禁止 ESC 关闭
+          onWheel={(e) => e.stopPropagation()} // 阻止滚轮事件穿透
+          onClick={(e) => e.stopPropagation()} // 阻止点击事件穿透
+          onMouseDown={(e) => e.stopPropagation()} // 阻止鼠标按下事件穿透
         >
           {/* 顶部进度条 */}
           <div className="px-6 py-4" style={{
