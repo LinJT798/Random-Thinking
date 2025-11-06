@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
-import { useTextSelection } from '@/hooks/useTextSelection';
+import { sanitizeHTML } from '@/lib/html-sanitizer';
 import TextToolbar from './TextToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
@@ -128,10 +128,17 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
     setIsEditing(false);
     clearSelection(); // 清除选中状态
 
-    // 获取 HTML 内容并保存
+    // 获取 HTML 内容，清理后保存
     const htmlContent = editorRef.current?.innerHTML || '';
-    if (htmlContent !== node.content) {
-      updateNode(node.id, { content: htmlContent });
+    const cleanedHTML = sanitizeHTML(htmlContent);
+
+    if (cleanedHTML !== node.content) {
+      updateNode(node.id, { content: cleanedHTML });
+    }
+
+    // 更新编辑器显示为清理后的内容
+    if (editorRef.current) {
+      editorRef.current.innerHTML = cleanedHTML;
     }
   };
 
@@ -425,6 +432,9 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
   // 拖拽中
   useEffect(() => {
     if (!isDragging) return;
+
+    // 拖拽时清除工具栏
+    clearSelection();
 
     const handleMouseMove = (e: MouseEvent) => {
       const newX = e.clientX / zoom - dragOffset.x;

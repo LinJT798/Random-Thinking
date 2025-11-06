@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
+import { sanitizeHTML } from '@/lib/html-sanitizer';
 import TextToolbar from './TextToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
@@ -121,8 +122,14 @@ export default function StickyNote({ node, isSelected, onSelect, zoom, viewportO
     clearSelection();
 
     const htmlContent = editorRef.current?.innerHTML || '';
-    if (htmlContent !== node.content) {
-      updateNode(node.id, { content: htmlContent });
+    const cleanedHTML = sanitizeHTML(htmlContent);
+
+    if (cleanedHTML !== node.content) {
+      updateNode(node.id, { content: cleanedHTML });
+    }
+
+    if (editorRef.current) {
+      editorRef.current.innerHTML = cleanedHTML;
     }
   };
 
@@ -399,6 +406,9 @@ export default function StickyNote({ node, isSelected, onSelect, zoom, viewportO
   // 拖拽中
   useEffect(() => {
     if (!isDragging) return;
+
+    // 拖拽时清除工具栏
+    clearSelection();
 
     const handleMouseMove = (e: MouseEvent) => {
       const newX = e.clientX / zoom - dragOffset.x;
