@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
 import { useTextSelection } from '@/hooks/useTextSelection';
-import AddToButton from '../AddToButton';
+import TextToolbar from './TextToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
 
@@ -12,53 +12,290 @@ interface TextNodeProps {
   isSelected: boolean;
   onSelect: () => void;
   zoom: number;
+  viewportOffset: { x: number; y: number };
 }
 
-export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeProps) {
+export default function TextNode({ node, isSelected, onSelect, zoom, viewportOffset }: TextNodeProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [content, setContent] = useState(node.content);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode } = useCanvasStore();
+  const { updateNode, deleteNode, setDraggingText } = useCanvasStore();
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
+  const justSelectedRef = useRef(false); // 标记是否刚刚选中节点
 
-  // 文本选中功能
-  const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
+  // 文本选中状态（自定义管理）
+  const [selectedText, setSelectedText] = useState('');
+  const [selectionRelativePos, setSelectionRelativePos] = useState<{ x: number; y: number } | null>(null);
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
 
-  // 同步node.content到本地state
-  useEffect(() => {
-    setContent(node.content);
-  }, [node.content]);
+  // 检测并更新选区
+  const updateSelection = () => {
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection?.toString() || '';
 
-  // 自动聚焦编辑框
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
+      if (text.length > 0 && selection && selection.rangeCount > 0 && editorRef.current) {
+        // 保存选区
+        const range = selection.getRangeAt(0);
+        setSavedRange(range.cloneRange());
+
+        // 获取选区在屏幕上的位置
+        const rect = range.getBoundingClientRect();
+        const editorRect = editorRef.current.getBoundingClientRect();
+
+        // 计算选区相对于编辑器的位置（屏幕像素偏移）
+        const offsetScreenX = rect.left + rect.width / 2 - editorRect.left;
+        const offsetScreenY = rect.top - editorRect.top;
+
+        // 转换为画布坐标的偏移
+        const relativeX = offsetScreenX / zoom;
+        const relativeY = offsetScreenY / zoom;
+
+        setSelectedText(text);
+        setSelectionRelativePos({ x: relativeX, y: relativeY });
+      }
+      // 不主动清除选区，让用户点击其他地方时自然清除
+    }, 10);
+  };
+
+  // 清除选区
+  const clearSelection = () => {
+    setSelectedText('');
+    setSelectionRelativePos(null);
+    setSavedRange(null);
+  };
+
+  // 计算工具栏在屏幕上的绝对位置
+  const getToolbarScreenPosition = () => {
+    if (!selectionRelativePos || !editorRef.current) return null;
+
+    // 获取编辑器当前在屏幕上的位置
+    const editorRect = editorRef.current.getBoundingClientRect();
+
+    // 选区相对于编辑器的屏幕偏移（已缩放）
+    const offsetScreenX = selectionRelativePos.x * zoom;
+    const offsetScreenY = selectionRelativePos.y * zoom;
+
+    // 选区在屏幕上的绝对位置
+    const screenX = editorRect.left + offsetScreenX;
+    const screenY = editorRect.top + offsetScreenY;
+
+    return { x: screenX, y: screenY };
+  };
+
+  // 恢复选区（用于工具栏操作后）
+  const restoreSelection = () => {
+    if (savedRange) {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(savedRange);
     }
-  }, [isEditing]);
+  };
+
+  // 初始化内容（组件首次挂载或 node.content 外部更新时）
+  useEffect(() => {
+    if (editorRef.current && !isEditing) {
+      // 只在非编辑模式下同步外部内容变化
+      const displayContent = node.content || '<span style="color: #9CA3AF">双击编辑...</span>';
+      editorRef.current.innerHTML = displayContent;
+    }
+  }, [node.content, isEditing]);
+
+  // 进入编辑模式时的初始化
+  useEffect(() => {
+    if (isEditing && editorRef.current) {
+      // 设置初始内容
+      editorRef.current.innerHTML = node.content;
+
+      // 聚焦并选中所有内容
+      editorRef.current.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }, [isEditing]); // 只依赖 isEditing，不依赖 node.content
 
   // 保存内容
   const handleBlur = () => {
     setIsEditing(false);
-    if (content !== node.content) {
-      updateNode(node.id, { content });
+    clearSelection(); // 清除选中状态
+
+    // 获取 HTML 内容并保存
+    const htmlContent = editorRef.current?.innerHTML || '';
+    if (htmlContent !== node.content) {
+      updateNode(node.id, { content: htmlContent });
     }
   };
+
+  // 格式化功能（保持选区）
+  const applyBold = () => {
+    restoreSelection();
+    document.execCommand('bold', false);
+    editorRef.current?.focus();
+    // 重新保存选区
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyItalic = () => {
+    restoreSelection();
+    document.execCommand('italic', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyUnderline = () => {
+    restoreSelection();
+    document.execCommand('underline', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyStrikethrough = () => {
+    restoreSelection();
+    document.execCommand('strikeThrough', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyFontSize = (size: number) => {
+    restoreSelection();
+
+    // 保存选区文本内容
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedContent = range.extractContents();
+
+    // 创建带字号的 span
+    const span = document.createElement('span');
+    span.style.fontSize = `${size}px`;
+    span.appendChild(selectedContent);
+
+    // 插入到原位置
+    range.insertNode(span);
+
+    // 重新选中这个 span 的内容
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+
+    editorRef.current?.focus();
+
+    // 保存新的选区
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        setSavedRange(sel.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyColor = (color: string) => {
+    restoreSelection();
+    document.execCommand('foreColor', false, color);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyBackgroundColor = (color: string) => {
+    restoreSelection();
+    if (color === 'transparent') {
+      document.execCommand('removeFormat', false);
+    } else {
+      document.execCommand('backColor', false, color);
+    }
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  // Add to 功能
+  const handleAddTo = () => {
+    if (selectedText) {
+      setDraggingText(selectedText);
+      clearSelection();
+      window.getSelection()?.removeAllRanges();
+    }
+  };
+
+  // 监听点击清除选区（只要不是点击工具栏，都清除）
+  useEffect(() => {
+    if (!isEditing || !selectedText) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // 只要点击的不是工具栏，就清除选区（即使点击编辑器内部也清除）
+      if (!target.closest('[data-text-toolbar]')) {
+        clearSelection();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEditing, selectedText]);
 
   // 处理键盘事件（编辑模式）
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
+      // 恢复原内容
+      if (editorRef.current) {
+        editorRef.current.innerHTML = node.content;
+      }
       setIsEditing(false);
-      setContent(node.content); // 恢复原内容
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       handleBlur();
+    }
+    // 快捷键支持
+    else if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+      e.preventDefault();
+      applyBold();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+      e.preventDefault();
+      applyItalic();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'u') {
+      e.preventDefault();
+      applyUnderline();
     }
   };
 
@@ -100,23 +337,72 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
     }
   }, [isSelected]);
 
-  // 双击编辑
-  const handleDoubleClick = () => {
-    setIsEditing(true);
+  // 单击处理：已选中时进入编辑模式
+  const handleClick = (e: React.MouseEvent) => {
+    if (isEditing || isResizing) return;
+
+    // 如果刚刚选中（这次点击触发的选中），不进入编辑
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
+    // 如果之前已经选中，则进入编辑模式
+    if (isSelected) {
+      setIsEditing(true);
+      // 延迟聚焦，让光标定位到点击位置
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+
+          // 获取点击位置并设置光标
+          const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+          if (range) {
+            const selection = window.getSelection();
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          }
+        }
+      }, 0);
+    }
   };
 
   // 拖拽开始
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isEditing || isResizing) return;
 
-    onSelect();
-    setIsDragging(true);
+    // 如果未选中，选中节点并标记
+    if (!isSelected) {
+      onSelect();
+      justSelectedRef.current = true; // 标记为刚刚选中
+    }
 
-    // 记录开始拖动时的鼠标位置和节点位置
-    setDragOffset({
-      x: e.clientX / zoom - node.position.x,
-      y: e.clientY / zoom - node.position.y,
-    });
+    // 记录鼠标按下的位置，用于判断是否拖拽
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      // 如果移动距离超过 5px，开始拖拽
+      if (distance > 5 && !isDragging) {
+        setIsDragging(true);
+        setDragOffset({
+          x: startX / zoom - node.position.x,
+          y: startY / zoom - node.position.y,
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
     e.stopPropagation();
   };
@@ -207,8 +493,9 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
     <div
       ref={nodeRef}
       className={`
-        absolute select-none
-        ${isDragging ? 'opacity-60 cursor-move' : 'cursor-move'}
+        absolute
+        ${isEditing ? 'cursor-default' : 'select-none'}
+        ${isEditing ? 'cursor-default' : isDragging ? 'opacity-60 cursor-move' : 'cursor-move'}
         ${isResizing ? 'cursor-nwse-resize' : ''}
       `}
       style={{
@@ -221,7 +508,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
         }),
       }}
       onMouseDown={handleMouseDown}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
     >
       <div
         className="h-full p-1.5 rounded-xl transition-all"
@@ -246,44 +533,24 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
         )}
 
         {/* 内容 */}
-        {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            onMouseUp={handleTextSelection}
-            className="w-full h-full resize-none border-none outline-none font-sans bg-transparent leading-relaxed"
-            placeholder="输入内容... (Ctrl+Enter 保存, Esc 取消)"
-            style={textStyle}
-          />
-        ) : (
-          <div
-            className="whitespace-pre-wrap break-words h-full leading-relaxed overflow-hidden"
-            style={textStyle}
-          >
-            {node.content || <span className="text-gray-400">双击编辑...</span>}
-          </div>
-        )}
+        <div
+          ref={editorRef}
+          contentEditable={isEditing}
+          suppressContentEditableWarning
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          onMouseUp={isEditing ? updateSelection : undefined}
+          onKeyUp={isEditing ? updateSelection : undefined}
+          className={`w-full h-full border-none outline-none font-sans bg-transparent leading-relaxed overflow-auto ${
+            isEditing ? 'cursor-text' : 'whitespace-pre-wrap break-words overflow-hidden cursor-default'
+          }`}
+          data-placeholder={isEditing ? "输入内容... (Ctrl+Enter 保存, Esc 取消)" : undefined}
+          style={{
+            ...textStyle,
+            minHeight: '100%',
+          }}
+        />
 
-        {/* 右侧按钮组 */}
-        {isSelected && !isEditing && (
-          <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
-            {/* 快捷键提示 - 橄榄绿 */}
-            {!showPropertyPanel && (
-              <div className="text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 glass-effect" style={{
-                background: '#8B8E63',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-              }}>
-                <kbd className="px-1.5 py-0.5 rounded text-[9px]" style={{
-                  background: 'rgba(255, 255, 255, 0.25)',
-                }}>Z</kbd>
-                <span>属性</span>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* 属性面板 */}
         {isSelected && !isEditing && showPropertyPanel && (
@@ -306,12 +573,19 @@ export default function TextNode({ node, isSelected, onSelect, zoom }: TextNodeP
         )}
       </div>
 
-      {/* Add to 按钮 */}
-      {selectedText && selectionPosition && (
-        <AddToButton
+      {/* 文本工具栏 */}
+      {isEditing && selectedText && selectionRelativePos && getToolbarScreenPosition() && (
+        <TextToolbar
+          position={getToolbarScreenPosition()!}
           selectedText={selectedText}
-          position={selectionPosition}
-          onClick={handleAddToClick}
+          onBold={applyBold}
+          onItalic={applyItalic}
+          onUnderline={applyUnderline}
+          onStrikethrough={applyStrikethrough}
+          onFontSize={applyFontSize}
+          onColor={applyColor}
+          onBackgroundColor={applyBackgroundColor}
+          onAddTo={handleAddTo}
         />
       )}
     </div>

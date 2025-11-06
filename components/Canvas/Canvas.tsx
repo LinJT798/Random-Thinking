@@ -259,6 +259,7 @@ export default function Canvas({ canvasId, syncStatus, onOpenOnboarding }: Canva
       isSelected,
       onSelect: () => selectNode(node.id),
       zoom,
+      viewportOffset,
     };
 
     switch (node.type) {

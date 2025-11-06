@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '@/lib/store';
-import { useTextSelection } from '@/hooks/useTextSelection';
-import AddToButton from '../AddToButton';
+import TextToolbar from './TextToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
 import type { CanvasNode } from '@/types';
 
@@ -12,6 +11,7 @@ interface StickyNoteProps {
   isSelected: boolean;
   onSelect: () => void;
   zoom: number;
+  viewportOffset: { x: number; y: number };
 }
 
 const COLORS = [
@@ -22,49 +22,261 @@ const COLORS = [
   { name: 'purple', bg: 'bg-purple-100/90', border: 'border-purple-200/50' },
 ];
 
-export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyNoteProps) {
+export default function StickyNote({ node, isSelected, onSelect, zoom, viewportOffset }: StickyNoteProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [content, setContent] = useState(node.content);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  const { updateNode, deleteNode } = useCanvasStore();
+  const { updateNode, deleteNode, setDraggingText } = useCanvasStore();
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
+  const justSelectedRef = useRef(false);
 
-  // 文本选中功能
-  const { selectedText, selectionPosition, handleTextSelection, handleAddToClick } = useTextSelection();
+  // 文本选中状态（自定义管理）
+  const [selectedText, setSelectedText] = useState('');
+  const [selectionRelativePos, setSelectionRelativePos] = useState<{ x: number; y: number } | null>(null);
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
 
-  // 同步node.content到本地state
+  // 检测并更新选区
+  const updateSelection = () => {
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection?.toString() || '';
+
+      if (text.length > 0 && selection && selection.rangeCount > 0 && editorRef.current) {
+        const range = selection.getRangeAt(0);
+        setSavedRange(range.cloneRange());
+
+        const rect = range.getBoundingClientRect();
+        const editorRect = editorRef.current.getBoundingClientRect();
+
+        const offsetScreenX = rect.left + rect.width / 2 - editorRect.left;
+        const offsetScreenY = rect.top - editorRect.top;
+
+        const relativeX = offsetScreenX / zoom;
+        const relativeY = offsetScreenY / zoom;
+
+        setSelectedText(text);
+        setSelectionRelativePos({ x: relativeX, y: relativeY });
+      }
+    }, 10);
+  };
+
+  const clearSelection = () => {
+    setSelectedText('');
+    setSelectionRelativePos(null);
+    setSavedRange(null);
+  };
+
+  const getToolbarScreenPosition = () => {
+    if (!selectionRelativePos || !editorRef.current) return null;
+
+    const editorRect = editorRef.current.getBoundingClientRect();
+    const offsetScreenX = selectionRelativePos.x * zoom;
+    const offsetScreenY = selectionRelativePos.y * zoom;
+
+    const screenX = editorRect.left + offsetScreenX;
+    const screenY = editorRect.top + offsetScreenY;
+
+    return { x: screenX, y: screenY };
+  };
+
+  const restoreSelection = () => {
+    if (savedRange) {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(savedRange);
+    }
+  };
+
+  // 初始化内容
   useEffect(() => {
-    setContent(node.content);
-  }, [node.content]);
+    if (editorRef.current && !isEditing) {
+      const displayContent = node.content || '<span style="color: #9CA3AF">双击编辑...</span>';
+      editorRef.current.innerHTML = displayContent;
+    }
+  }, [node.content, isEditing]);
 
-  // 自动聚焦编辑框
+  // 进入编辑模式时的初始化
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
+    if (isEditing && editorRef.current) {
+      editorRef.current.innerHTML = node.content;
+      editorRef.current.focus();
+
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
     }
   }, [isEditing]);
 
   // 保存内容
   const handleBlur = () => {
     setIsEditing(false);
-    if (content !== node.content) {
-      updateNode(node.id, { content });
+    clearSelection();
+
+    const htmlContent = editorRef.current?.innerHTML || '';
+    if (htmlContent !== node.content) {
+      updateNode(node.id, { content: htmlContent });
     }
   };
+
+  // 格式化功能
+  const applyBold = () => {
+    restoreSelection();
+    document.execCommand('bold', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyItalic = () => {
+    restoreSelection();
+    document.execCommand('italic', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyUnderline = () => {
+    restoreSelection();
+    document.execCommand('underline', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyStrikethrough = () => {
+    restoreSelection();
+    document.execCommand('strikeThrough', false);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyFontSize = (size: number) => {
+    restoreSelection();
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedContent = range.extractContents();
+
+    const span = document.createElement('span');
+    span.style.fontSize = `${size}px`;
+    span.appendChild(selectedContent);
+
+    range.insertNode(span);
+
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+
+    editorRef.current?.focus();
+
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        setSavedRange(sel.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyColor = (color: string) => {
+    restoreSelection();
+    document.execCommand('foreColor', false, color);
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const applyBackgroundColor = (color: string) => {
+    restoreSelection();
+    if (color === 'transparent') {
+      document.execCommand('removeFormat', false);
+    } else {
+      document.execCommand('backColor', false, color);
+    }
+    editorRef.current?.focus();
+    setTimeout(() => {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        setSavedRange(selection.getRangeAt(0).cloneRange());
+      }
+    }, 0);
+  };
+
+  const handleAddTo = () => {
+    if (selectedText) {
+      setDraggingText(selectedText);
+      clearSelection();
+      window.getSelection()?.removeAllRanges();
+    }
+  };
+
+  // 监听点击清除选区
+  useEffect(() => {
+    if (!isEditing || !selectedText) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-text-toolbar]')) {
+        clearSelection();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEditing, selectedText]);
 
   // 处理键盘事件（编辑模式）
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = node.content;
+      }
       setIsEditing(false);
-      setContent(node.content);
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      handleBlur();
+    }
+    else if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+      e.preventDefault();
+      applyBold();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+      e.preventDefault();
+      applyItalic();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'u') {
+      e.preventDefault();
+      applyUnderline();
     }
   };
 
@@ -106,23 +318,65 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     }
   }, [isSelected]);
 
-  // 双击编辑
-  const handleDoubleClick = () => {
-    setIsEditing(true);
+  // 单击处理：已选中时进入编辑模式
+  const handleClick = (e: React.MouseEvent) => {
+    if (isEditing || isResizing) return;
+
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
+    if (isSelected) {
+      setIsEditing(true);
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+
+          const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+          if (range) {
+            const selection = window.getSelection();
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          }
+        }
+      }, 0);
+    }
   };
 
   // 拖拽开始
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isEditing || isResizing) return;
 
-    onSelect();
-    setIsDragging(true);
+    if (!isSelected) {
+      onSelect();
+      justSelectedRef.current = true;
+    }
 
-    // 记录开始拖动时的鼠标位置和节点位置
-    setDragOffset({
-      x: e.clientX / zoom - node.position.x,
-      y: e.clientY / zoom - node.position.y,
-    });
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      if (distance > 5 && !isDragging) {
+        setIsDragging(true);
+        setDragOffset({
+          x: startX / zoom - node.position.x,
+          y: startY / zoom - node.position.y,
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
     e.stopPropagation();
   };
@@ -209,8 +463,9 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
     <div
       ref={nodeRef}
       className={`
-        absolute select-none p-1.5
-        ${isDragging ? 'opacity-70 cursor-move' : 'cursor-move'}
+        absolute p-1.5
+        ${isEditing ? 'cursor-default' : 'select-none'}
+        ${isEditing ? 'cursor-default' : isDragging ? 'opacity-70 cursor-move' : 'cursor-move'}
         ${isResizing ? 'cursor-nwse-resize' : ''}
       `}
       style={{
@@ -227,47 +482,26 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         }),
       }}
       onMouseDown={handleMouseDown}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
     >
       {/* 内容 */}
-      {isEditing ? (
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          onMouseUp={handleTextSelection}
-          className="w-full h-full resize-none border-none outline-none bg-transparent font-handwriting"
-          placeholder="写下你的想法..."
-          style={textStyle}
-        />
-      ) : (
-        <div
-          className="whitespace-pre-wrap break-words h-full font-handwriting"
-          style={textStyle}
-        >
-          {node.content || '双击编辑...'}
-        </div>
-      )}
-
-      {/* 右侧按钮组 */}
-      {isSelected && !isEditing && (
-        <div className="absolute -right-[62px] top-1/2 -translate-y-1/2 flex flex-col gap-2 items-start z-10">
-          {/* 快捷键提示 - 橄榄绿 */}
-          {!showPropertyPanel && (
-            <div className="text-white text-[10px] px-2 py-1 rounded-lg font-medium whitespace-nowrap flex items-center gap-1 glass-effect" style={{
-              background: '#8B8E63',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-            }}>
-              <kbd className="px-1.5 py-0.5 rounded text-[9px]" style={{
-                background: 'rgba(255, 255, 255, 0.25)',
-              }}>Z</kbd>
-              <span>属性</span>
-            </div>
-          )}
-        </div>
-      )}
+      <div
+        ref={editorRef}
+        contentEditable={isEditing}
+        suppressContentEditableWarning
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        onMouseUp={isEditing ? updateSelection : undefined}
+        onKeyUp={isEditing ? updateSelection : undefined}
+        className={`w-full h-full border-none outline-none bg-transparent font-handwriting overflow-auto ${
+          isEditing ? 'cursor-text' : 'whitespace-pre-wrap break-words overflow-hidden cursor-default'
+        }`}
+        data-placeholder={isEditing ? "写下你的想法..." : undefined}
+        style={{
+          ...textStyle,
+          minHeight: '100%',
+        }}
+      />
 
       {/* 属性面板 */}
       {isSelected && !isEditing && showPropertyPanel && (
@@ -289,12 +523,19 @@ export default function StickyNote({ node, isSelected, onSelect, zoom }: StickyN
         />
       )}
 
-      {/* Add to 按钮 */}
-      {selectedText && selectionPosition && (
-        <AddToButton
+      {/* 文本工具栏 */}
+      {isEditing && selectedText && selectionRelativePos && getToolbarScreenPosition() && (
+        <TextToolbar
+          position={getToolbarScreenPosition()!}
           selectedText={selectedText}
-          position={selectionPosition}
-          onClick={handleAddToClick}
+          onBold={applyBold}
+          onItalic={applyItalic}
+          onUnderline={applyUnderline}
+          onStrikethrough={applyStrikethrough}
+          onFontSize={applyFontSize}
+          onColor={applyColor}
+          onBackgroundColor={applyBackgroundColor}
+          onAddTo={handleAddTo}
         />
       )}
     </div>

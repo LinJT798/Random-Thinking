@@ -12,9 +12,10 @@ interface MindMapNodeProps {
   isSelected: boolean;
   onSelect: () => void;
   zoom: number;
+  viewportOffset: { x: number; y: number };
 }
 
-export default function MindMapNode({ node, isSelected, onSelect, zoom }: MindMapNodeProps) {
+export default function MindMapNode({ node, isSelected, onSelect, zoom, viewportOffset }: MindMapNodeProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(node.content);
   const [isDragging, setIsDragging] = useState(false);

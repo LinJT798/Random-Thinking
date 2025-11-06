@@ -131,7 +131,10 @@ export function useTextSelection() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (selectedText && !target.closest('[data-add-to-button]')) {
+      // 检查是否点击在工具栏或 Add to 按钮上
+      if (selectedText &&
+          !target.closest('[data-add-to-button]') &&
+          !target.closest('[data-text-toolbar]')) {
         clearSelection();
       }
     };

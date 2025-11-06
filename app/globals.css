@@ -225,3 +225,35 @@ html, body {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }
+
+/* contenteditable placeholder 样式 */
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9CA3AF;
+  pointer-events: none;
+  position: absolute;
+}
+
+[contenteditable]:focus {
+  outline: none;
+}
+
+/* 富文本编辑样式 */
+[contenteditable] b,
+[contenteditable] strong {
+  font-weight: bold;
+}
+
+[contenteditable] i,
+[contenteditable] em {
+  font-style: italic;
+}
+
+[contenteditable] u {
+  text-decoration: underline;
+}
+
+[contenteditable] strike,
+[contenteditable] s {
+  text-decoration: line-through;
+}
