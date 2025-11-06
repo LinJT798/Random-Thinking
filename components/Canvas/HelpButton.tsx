@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 interface HelpButtonProps {
@@ -9,6 +9,41 @@ interface HelpButtonProps {
 
 export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
   const [open, setOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // 阻止原生事件穿透到画布
+  useEffect(() => {
+    if (!open || !contentRef.current) return;
+
+    const element = contentRef.current;
+
+    // 阻止所有可能穿透的原生事件
+    const stopEvent = (e: Event) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+
+    // 添加原生事件监听器（捕获阶段）
+    element.addEventListener('wheel', stopEvent, { capture: true, passive: false });
+    element.addEventListener('mousedown', stopEvent, { capture: true });
+    element.addEventListener('mouseup', stopEvent, { capture: true });
+    element.addEventListener('click', stopEvent, { capture: true });
+    element.addEventListener('dblclick', stopEvent, { capture: true });
+    element.addEventListener('touchstart', stopEvent, { capture: true, passive: false });
+    element.addEventListener('touchmove', stopEvent, { capture: true, passive: false });
+    element.addEventListener('touchend', stopEvent, { capture: true });
+
+    return () => {
+      element.removeEventListener('wheel', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('mousedown', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('mouseup', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('click', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('dblclick', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchstart', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchmove', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchend', stopEvent, { capture: true } as EventListenerOptions);
+    };
+  }, [open]);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -35,10 +70,8 @@ export default function HelpButton({ onOpenOnboarding }: HelpButtonProps = {}) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in-0" />
         <Dialog.Content
+          ref={contentRef}
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-6 w-[90vw] max-w-md animate-in fade-in-0 zoom-in-95"
-          onWheel={(e) => e.stopPropagation()} // 阻止滚轮事件穿透
-          onClick={(e) => e.stopPropagation()} // 阻止点击事件穿透
-          onMouseDown={(e) => e.stopPropagation()} // 阻止鼠标按下事件穿透
         >
           <Dialog.Title className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

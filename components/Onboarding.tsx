@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 interface OnboardingProps {
@@ -55,9 +55,44 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 export default function Onboarding({ isOpen, onClose }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === ONBOARDING_STEPS.length - 1;
+
+  // 阻止原生事件穿透到画布
+  useEffect(() => {
+    if (!isOpen || !contentRef.current) return;
+
+    const element = contentRef.current;
+
+    // 阻止所有可能穿透的原生事件
+    const stopEvent = (e: Event) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation(); // 阻止所有后续监听器
+    };
+
+    // 添加原生事件监听器（捕获阶段）
+    element.addEventListener('wheel', stopEvent, { capture: true, passive: false });
+    element.addEventListener('mousedown', stopEvent, { capture: true });
+    element.addEventListener('mouseup', stopEvent, { capture: true });
+    element.addEventListener('click', stopEvent, { capture: true });
+    element.addEventListener('dblclick', stopEvent, { capture: true });
+    element.addEventListener('touchstart', stopEvent, { capture: true, passive: false });
+    element.addEventListener('touchmove', stopEvent, { capture: true, passive: false });
+    element.addEventListener('touchend', stopEvent, { capture: true });
+
+    return () => {
+      element.removeEventListener('wheel', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('mousedown', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('mouseup', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('click', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('dblclick', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchstart', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchmove', stopEvent, { capture: true } as EventListenerOptions);
+      element.removeEventListener('touchend', stopEvent, { capture: true } as EventListenerOptions);
+    };
+  }, [isOpen]);
 
   const handleNext = () => {
     if (isLastStep) {
@@ -103,6 +138,7 @@ export default function Onboarding({ isOpen, onClose }: OnboardingProps) {
         }} />
 
         <Dialog.Content
+          ref={contentRef}
           className="fixed top-1/2 left-1/2 z-[9999] w-[90vw] max-w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-2xl glass-effect"
           style={{
             background: '#EDE4D5',
@@ -111,9 +147,6 @@ export default function Onboarding({ isOpen, onClose }: OnboardingProps) {
           }}
           onPointerDownOutside={(e) => e.preventDefault()} // 禁止点击外部关闭
           onEscapeKeyDown={(e) => e.preventDefault()} // 禁止 ESC 关闭
-          onWheel={(e) => e.stopPropagation()} // 阻止滚轮事件穿透
-          onClick={(e) => e.stopPropagation()} // 阻止点击事件穿透
-          onMouseDown={(e) => e.stopPropagation()} // 阻止鼠标按下事件穿透
         >
           {/* 顶部进度条 */}
           <div className="px-6 py-4" style={{
