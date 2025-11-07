@@ -494,43 +494,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
     }
   };
 
-  // 将消息添加到画布
-  const handleAddToCanvas = async (content: string) => {
-    if (!session) return;
-
-    // 计算文本所需尺寸
-    const size = calculateTextNodeSize(content);
-
-    // 获取最新的 nodes 状态
-    const currentNodes = useCanvasStore.getState().nodes;
-
-    // 使用智能布局找到无重叠位置
-    const position = findNonOverlappingPosition({
-      width: size.width,
-      height: size.height,
-      nodes: currentNodes
-    });
-
-    // 创建节点
-    const nodeId = await addNode({
-      type: 'text',
-      content: content,
-      position,
-      size,
-      connections: [],
-    });
-
-    // 触发视角移动事件
-    if (nodeId) {
-      window.dispatchEvent(new CustomEvent('focusNode', {
-        detail: {
-          x: position.x + size.width / 2,
-          y: position.y + size.height / 2
-        }
-      }));
-    }
-  };
-
   // 拖拽处理
   const handleDrag = useCallback((e: MouseEvent) => {
     if (isDragging) {
@@ -903,23 +866,6 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                   >
                     <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
                   </div>
-
-                  {/* AI 消息的添加到画布按钮 */}
-                  {msg.role === 'assistant' && (
-                    <button
-                      onClick={() => handleAddToCanvas(msg.content)}
-                      className="mt-1 text-xs transition-colors flex items-center gap-1"
-                      style={{ color: '#7A6F67' }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#8B8E63'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#7A6F67'}
-                      title="添加到画布"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span>添加到画布</span>
-                    </button>
-                  )}
                 </>
               )}
             </div>
