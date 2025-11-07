@@ -552,8 +552,8 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
           onKeyDown={handleKeyDown}
           onMouseUp={isEditing ? updateSelection : undefined}
           onKeyUp={isEditing ? updateSelection : undefined}
-          className={`w-full h-full border-none outline-none font-sans bg-transparent leading-normal overflow-auto ${
-            isEditing ? 'cursor-text' : 'whitespace-pre-wrap break-words overflow-hidden cursor-default'
+          className={`w-full h-full border-none outline-none font-sans bg-transparent leading-normal overflow-auto whitespace-pre-wrap break-words ${
+            isEditing ? 'cursor-text' : 'overflow-hidden cursor-default'
           }`}
           data-placeholder={isEditing ? "输入内容... (Ctrl+Enter 保存, Esc 取消)" : undefined}
           style={{

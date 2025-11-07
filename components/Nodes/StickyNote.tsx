@@ -504,8 +504,8 @@ export default function StickyNote({ node, isSelected, onSelect, zoom, viewportO
         onKeyDown={handleKeyDown}
         onMouseUp={isEditing ? updateSelection : undefined}
         onKeyUp={isEditing ? updateSelection : undefined}
-        className={`w-full h-full border-none outline-none bg-transparent font-handwriting overflow-auto ${
-          isEditing ? 'cursor-text' : 'whitespace-pre-wrap break-words overflow-hidden cursor-default'
+        className={`w-full h-full border-none outline-none bg-transparent font-handwriting overflow-auto whitespace-pre-wrap break-words ${
+          isEditing ? 'cursor-text' : 'overflow-hidden cursor-default'
         }`}
         data-placeholder={isEditing ? "写下你的想法..." : undefined}
         style={{
