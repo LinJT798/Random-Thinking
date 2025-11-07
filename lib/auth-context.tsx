@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
-    }).catch((error) => {
+    }).catch((error: unknown) => {
       console.error('Failed to get session:', error)
       setUser(null)
       setSession(null)
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       })
       return { error }
-    } catch (error) {
+    } catch (error: unknown) {
       return { error: error as Error }
     }
   }
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       })
       return { error }
-    } catch (error) {
+    } catch (error: unknown) {
       return { error: error as Error }
     }
   }
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await indexedDB.deleteDatabase('InfiniteCanvasDB')
       localStorage.removeItem('offline_sync_queue')
       console.log('✅ Local data cleared on sign out')
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Failed to clear local data:', error)
     }
 
