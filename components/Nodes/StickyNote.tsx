@@ -5,6 +5,7 @@ import { useCanvasStore } from '@/lib/store';
 import { sanitizeHTML } from '@/lib/html-sanitizer';
 import TextToolbar from './TextToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
+import AIConfirmToolbar from './AIConfirmToolbar';
 import type { CanvasNode } from '@/types';
 
 interface StickyNoteProps {
@@ -546,6 +547,20 @@ export default function StickyNote({ node, isSelected, onSelect, zoom, viewportO
           onColor={applyColor}
           onBackgroundColor={applyBackgroundColor}
           onAddTo={handleAddTo}
+        />
+      )}
+
+      {/* AI 确认工具栏 */}
+      {node.aiMetadata?.confirmStatus === 'pending' &&
+       node.aiMetadata.chatId &&
+       node.aiMetadata.messageId &&
+       node.aiMetadata.toolIndex !== undefined && (
+        <AIConfirmToolbar
+          nodeId={node.id}
+          chatId={node.aiMetadata.chatId}
+          messageId={node.aiMetadata.messageId}
+          toolIndex={node.aiMetadata.toolIndex}
+          nodeWidth={node.size.width}
         />
       )}
     </div>

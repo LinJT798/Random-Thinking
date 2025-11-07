@@ -78,7 +78,7 @@ interface CanvasStore {
   deleteChatSession: (chatId: string) => Promise<void>;
 
   sendChatMessage: (chatId: string, content: string) => Promise<void>;
-  addChatMessage: (chatId: string, role: 'user' | 'assistant' | 'tool', content: string, references?: ChatReference[], toolCalls?: ToolCallInfo[], tool_call_id?: string) => Promise<void>;
+  addChatMessage: (chatId: string, role: 'user' | 'assistant' | 'tool', content: string, references?: ChatReference[], toolCalls?: ToolCallInfo[], tool_call_id?: string) => Promise<string>;
   confirmToolCall: (chatId: string, messageId: string, toolIndex: number) => Promise<void>;
   rejectToolCall: (chatId: string, messageId: string, toolIndex: number) => Promise<void>;
   loadChatHistory: (chatId: string) => Promise<void>;
@@ -627,10 +627,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   // 添加聊天消息
   addChatMessage: async (chatId, role, content, references, toolCalls, tool_call_id) => {
     const { chatSessions, currentCanvasId } = get();
-    if (!currentCanvasId) return;
+    if (!currentCanvasId) return '';
 
     const session = chatSessions.find(s => s.id === chatId);
-    if (!session) return;
+    if (!session) return '';
 
     // 创建新消息
     const newMessage: ChatMessage = {
@@ -663,13 +663,35 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       messages: updatedSession.messages,
       updatedAt: updatedSession.updatedAt,
     });
+
+    // 返回新消息的 ID
+    return newMessage.id;
   },
 
   // 确认工具调用
   confirmToolCall: async (chatId, messageId, toolIndex) => {
-    const { chatSessions } = get();
+    const { chatSessions, nodes } = get();
     const session = chatSessions.find(s => s.id === chatId);
     if (!session) return;
+
+    // 获取工具调用信息
+    const message = session.messages.find(msg => msg.id === messageId);
+    const toolCall = message?.toolCalls?.[toolIndex];
+
+    // 更新相关节点的 confirmStatus
+    if (toolCall?.nodeIds) {
+      for (const nodeId of toolCall.nodeIds) {
+        const node = nodes.find(n => n.id === nodeId);
+        if (node?.aiMetadata) {
+          await get().updateNode(nodeId, {
+            aiMetadata: {
+              ...node.aiMetadata,
+              confirmStatus: 'confirmed',
+            },
+          });
+        }
+      }
+    }
 
     const updatedMessages = session.messages.map(msg => {
       if (msg.id === messageId && msg.toolCalls) {

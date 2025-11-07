@@ -5,6 +5,7 @@ import { useCanvasStore } from '@/lib/store';
 import { sanitizeHTML } from '@/lib/html-sanitizer';
 import TextToolbar from './TextToolbar';
 import PropertyPanel from '../PropertyPanel/PropertyPanel';
+import AIConfirmToolbar from './AIConfirmToolbar';
 import type { CanvasNode } from '@/types';
 
 interface TextNodeProps {
@@ -467,7 +468,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
       const deltaY = (e.clientY - resizeStart.y) / zoom;
 
       const newWidth = Math.max(100, resizeStart.width + deltaX);
-      const newHeight = Math.max(60, resizeStart.height + deltaY);
+      const newHeight = Math.max(40, resizeStart.height + deltaY);
 
       updateNode(node.id, {
         size: { width: newWidth, height: newHeight },
@@ -521,7 +522,7 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
       onClick={handleClick}
     >
       <div
-        className="h-full p-1.5 rounded-xl transition-all"
+        className="h-full px-3 py-2 rounded-xl transition-all"
         style={{
           backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : 'transparent',
           boxShadow: backgroundColor !== 'transparent' ? '0 4px 12px rgba(61, 52, 44, 0.08)' : 'none',
@@ -551,13 +552,14 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
           onKeyDown={handleKeyDown}
           onMouseUp={isEditing ? updateSelection : undefined}
           onKeyUp={isEditing ? updateSelection : undefined}
-          className={`w-full h-full border-none outline-none font-sans bg-transparent leading-relaxed overflow-auto ${
+          className={`w-full h-full border-none outline-none font-sans bg-transparent leading-normal overflow-auto ${
             isEditing ? 'cursor-text' : 'whitespace-pre-wrap break-words overflow-hidden cursor-default'
           }`}
           data-placeholder={isEditing ? "输入内容... (Ctrl+Enter 保存, Esc 取消)" : undefined}
           style={{
             ...textStyle,
             minHeight: '100%',
+            lineHeight: '1.5',
           }}
         />
 
@@ -596,6 +598,20 @@ export default function TextNode({ node, isSelected, onSelect, zoom, viewportOff
           onColor={applyColor}
           onBackgroundColor={applyBackgroundColor}
           onAddTo={handleAddTo}
+        />
+      )}
+
+      {/* AI 确认工具栏 */}
+      {node.aiMetadata?.confirmStatus === 'pending' &&
+       node.aiMetadata.chatId &&
+       node.aiMetadata.messageId &&
+       node.aiMetadata.toolIndex !== undefined && (
+        <AIConfirmToolbar
+          nodeId={node.id}
+          chatId={node.aiMetadata.chatId}
+          messageId={node.aiMetadata.messageId}
+          toolIndex={node.aiMetadata.toolIndex}
+          nodeWidth={node.size.width}
         />
       )}
     </div>

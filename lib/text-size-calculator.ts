@@ -14,8 +14,8 @@ export function calculateTextNodeSize(text: string): { width: number; height: nu
   measureDiv.style.fontSize = '14px';
   measureDiv.style.fontWeight = 'normal';
   measureDiv.style.fontFamily = 'sans-serif';
-  measureDiv.style.lineHeight = '1.6';
-  measureDiv.style.padding = '16px'; // 对应 TextNode 的 p-4
+  measureDiv.style.lineHeight = '1.5';
+  measureDiv.style.padding = '8px 12px'; // 对应 TextNode 的 px-3 py-2
 
   // 设置最大宽度以触发自动换行
   const maxWidth = 600; // 最大宽度限制
@@ -38,15 +38,15 @@ export function calculateTextNodeSize(text: string): { width: number; height: nu
 
   // 设置最小和最大尺寸
   const minWidth = 200;
-  const minHeight = 80;
+  const minHeight = 40; // 降低最小高度，与 TextNode 调整大小的限制一致
   const maxHeight = 800;
 
   width = Math.max(minWidth, Math.min(maxWidth, width));
   height = Math.max(minHeight, Math.min(maxHeight, height));
 
-  // 添加一些额外的边距以确保内容不会被裁剪
-  width += 20;
-  height += 20;
+  // 添加一些额外的边距以确保内容不会被裁剪（减少额外空间）
+  width += 10;
+  height += 5;
 
   return { width, height };
 }

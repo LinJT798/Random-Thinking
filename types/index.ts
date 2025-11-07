@@ -22,6 +22,11 @@ export interface AIMetadata {
   prompt?: string;
   timestamp: number;
   originalNodeId?: string; // 如果是AI生成的，关联原始节点
+  // 工具调用确认信息（用于在节点上显示确认工具栏）
+  chatId?: string;
+  messageId?: string;
+  toolIndex?: number;
+  confirmStatus?: 'pending' | 'confirmed' | 'rejected';
 }
 
 // 思维导图布局类型

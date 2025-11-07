@@ -381,7 +381,17 @@ export async function POST(request: NextRequest) {
                     // finish_reason 表示响应结束，此时必须处理工具调用
                     if (event.choices[0].finish_reason === 'tool_calls' && currentToolCall) {
                       try {
-                        const toolInput = JSON.parse(currentToolCall.arguments || '{}');
+                        // 清理参数字符串：移除可能的控制字符和多余空格
+                        const cleanedArgs = (currentToolCall.arguments || '{}').trim();
+
+                        // 调试日志
+                        console.log('Parsing tool arguments:', {
+                          toolName: currentToolCall.name,
+                          argsLength: cleanedArgs.length,
+                          argsPreview: cleanedArgs.substring(0, 100)
+                        });
+
+                        const toolInput = JSON.parse(cleanedArgs);
 
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
                           type: 'tool_use',
@@ -393,6 +403,32 @@ export async function POST(request: NextRequest) {
                         currentToolCall = null;
                       } catch (e) {
                         console.error('Failed to parse tool arguments:', e);
+                        if (currentToolCall) {
+                          console.error('Raw arguments string:', currentToolCall.arguments);
+                          console.error('Arguments length:', currentToolCall.arguments?.length);
+
+                          // 尝试修复常见问题：截断到第一个完整的 JSON 对象
+                          try {
+                            const argsString = currentToolCall.arguments || '';
+                            const firstBrace = argsString.indexOf('{');
+                            const lastBrace = argsString.lastIndexOf('}');
+                            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                              const fixedArgs = argsString.substring(firstBrace, lastBrace + 1);
+                              console.log('Attempting to parse fixed args:', fixedArgs);
+                              const toolInput = JSON.parse(fixedArgs);
+
+                              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                                type: 'tool_use',
+                                tool_use_id: currentToolCall.id || `tool_${Date.now()}`,
+                                tool: currentToolCall.name,
+                                input: toolInput
+                              })}\n\n`));
+                            }
+                          } catch (retryError) {
+                            console.error('Retry parsing also failed:', retryError);
+                          }
+                        }
+
                         currentToolCall = null;
                       }
                     }

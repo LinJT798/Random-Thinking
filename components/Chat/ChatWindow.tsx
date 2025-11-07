@@ -127,6 +127,11 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             position,
             size,
             connections: [],
+            aiMetadata: {
+              source: 'user',
+              timestamp: Date.now(),
+              confirmStatus: 'pending', // 标记为待确认状态
+            },
           });
           createdNodeIds.push(nodeId);
           break;
@@ -146,6 +151,11 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
             size: { width: 200, height: 200 },
             color: 'yellow', // 固定使用淡黄色
             connections: [],
+            aiMetadata: {
+              source: 'user',
+              timestamp: Date.now(),
+              confirmStatus: 'pending', // 标记为待确认状态
+            },
           });
           createdNodeIds.push(nodeId);
           break;
@@ -335,13 +345,32 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       // 如果有工具调用，进行第二轮对话
       if (toolCallsList.length > 0) {
         // 保存第一轮的 AI 回复（包含工具调用）
-        await addChatMessage(
+        const messageId = await addChatMessage(
           chatId,
           'assistant',
           firstMessage || '',
           undefined,
           toolCallsList
         );
+
+        // 更新所有创建的节点的 aiMetadata，添加确认信息
+        if (messageId && messageId !== '') {
+          toolCallsList.forEach(async (toolCall, index) => {
+            for (const nodeId of toolCall.nodeIds) {
+              const node = useCanvasStore.getState().nodes.find(n => n.id === nodeId);
+              if (node && node.aiMetadata?.confirmStatus === 'pending') {
+                await updateNode(nodeId, {
+                  aiMetadata: {
+                    ...node.aiMetadata,
+                    chatId,
+                    messageId,
+                    toolIndex: index,
+                  },
+                });
+              }
+            }
+          });
+        }
 
         // 保存 tool 消息到数据库（保持对话格式正确）
         for (const toolCall of toolCallsList) {
@@ -829,64 +858,8 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                             </div>
                           </div>
 
-                          {/* 操作按钮 */}
+                          {/* 操作按钮 - pending 状态不显示按钮，确认操作在节点上进行 */}
                           <div className="flex items-center gap-2">
-                            {toolCall.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => confirmToolCall(chatId, msg.id, index)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200"
-                                  style={{
-                                    background: 'rgba(248, 244, 239, 0.8)',
-                                    border: '2px solid rgba(139, 142, 99, 0.5)',
-                                    color: '#8B8E63',
-                                    boxShadow: '0 2px 4px rgba(61, 52, 44, 0.05)',
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(139, 142, 99, 0.15)';
-                                    e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.7)';
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(61, 52, 44, 0.08)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(248, 244, 239, 0.8)';
-                                    e.currentTarget.style.borderColor = 'rgba(139, 142, 99, 0.5)';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(61, 52, 44, 0.05)';
-                                  }}
-                                  title="确认保留"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  <span>保留</span>
-                                </button>
-                                <button
-                                  onClick={() => rejectToolCall(chatId, msg.id, index)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200"
-                                  style={{
-                                    background: 'rgba(248, 244, 239, 0.8)',
-                                    border: '2px solid rgba(122, 111, 103, 0.3)',
-                                    color: '#7A6F67',
-                                    boxShadow: '0 2px 4px rgba(61, 52, 44, 0.05)',
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(122, 111, 103, 0.1)';
-                                    e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.5)';
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(61, 52, 44, 0.08)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(248, 244, 239, 0.8)';
-                                    e.currentTarget.style.borderColor = 'rgba(122, 111, 103, 0.3)';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(61, 52, 44, 0.05)';
-                                  }}
-                                  title="删除节点"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                  <span>删除</span>
-                                </button>
-                              </>
-                            )}
                             {toolCall.status === 'confirmed' && (
                               <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl w-full" style={{
                                 color: '#8B8E63',
