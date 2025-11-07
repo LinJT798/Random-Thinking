@@ -61,7 +61,7 @@ export class SupabaseDB {
 
     // 为每个画布加载节点
     const canvasesWithNodes = await Promise.all(
-      data.map(async (canvas) => {
+      data.map(async (canvas: { id: string; name: string; created_at: string; updated_at: string }) => {
         const nodes = await this.getCanvasNodes(canvas.id)
         return {
           id: canvas.id,
@@ -144,7 +144,7 @@ export class SupabaseDB {
       throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
     }
 
-    return data.map(this.dbNodeToCanvasNode)
+    return data.map((node: any) => this.dbNodeToCanvasNode(node))
   }
 
   async createNode(userId: string, canvasId: string, node: Omit<CanvasNode, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -231,7 +231,7 @@ export class SupabaseDB {
       if (fetchError) {
         console.warn(`⚠️ 无法获取云端节点列表（网络问题），跳过删除步骤，仅上传节点`)
       } else {
-        cloudNodeIds = cloudNodes?.map(n => n.id) || []
+        cloudNodeIds = cloudNodes?.map((n: { id: string }) => n.id) || []
       }
     } catch (e) {
       console.warn(`⚠️ 获取云端节点时出错，跳过删除步骤`)
@@ -239,8 +239,8 @@ export class SupabaseDB {
 
     // 2. 找出需要删除的节点（云端有但本地没有的）
     if (cloudNodeIds.length > 0) {
-      const localNodeIds = new Set(nodes.map(n => n.id))
-      const nodesToDelete = cloudNodeIds.filter(id => !localNodeIds.has(id))
+      const localNodeIds = new Set(nodes.map((n: CanvasNode) => n.id))
+      const nodesToDelete = cloudNodeIds.filter((id: string) => !localNodeIds.has(id))
 
       // 3. 删除云端多余的节点
       if (nodesToDelete.length > 0) {
@@ -346,7 +346,7 @@ export class SupabaseDB {
       throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
     }
 
-    return data.map(session => ({
+    return data.map((session: any) => ({
       id: session.id,
       canvasId: session.canvas_id,
       name: session.name,
