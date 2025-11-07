@@ -41,7 +41,7 @@ export default function AIToolbar({ node }: AIToolbarProps) {
         setError(response.error || '扩写失败');
         setTimeout(() => setError(null), 3000);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Expand error:', err);
       setError('扩写时出错');
       setTimeout(() => setError(null), 3000);
@@ -85,7 +85,7 @@ export default function AIToolbar({ node }: AIToolbarProps) {
         setError(response.error || '总结失败');
         setTimeout(() => setError(null), 3000);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Summarize error:', err);
       setError('总结时出错');
       setTimeout(() => setError(null), 3000);

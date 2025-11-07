@@ -196,7 +196,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       }
 
       setTimeout(() => setToolCallStatus(''), 1000);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Tool call failed:', error);
       setToolCallStatus('');
     }
@@ -428,7 +428,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       }
 
       setStreamingMessage('');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error sending message:', error);
       // 可以添加错误提示
     } finally {

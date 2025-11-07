@@ -84,7 +84,7 @@ export async function ensureValidSession() {
     }
 
     return true
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ 检查会话时出错:', error)
     return false
   }

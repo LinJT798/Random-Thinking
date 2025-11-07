@@ -76,7 +76,7 @@ ${content}
     };
 
     return NextResponse.json(successResponse);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in expand API:', error);
 
     const errorResponse: AIResponse = {

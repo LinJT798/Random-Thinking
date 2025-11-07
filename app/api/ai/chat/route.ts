@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
         } else {
           errorData = { message: await apiResponse.text() };
         }
-      } catch (e) {
+      } catch (e: unknown) {
         errorData = { message: 'Failed to parse error response' };
       }
 
@@ -401,7 +401,7 @@ export async function POST(request: NextRequest) {
                         })}\n\n`));
 
                         currentToolCall = null;
-                      } catch (e) {
+                      } catch (e: unknown) {
                         console.error('Failed to parse tool arguments:', e);
                         if (currentToolCall) {
                           console.error('Raw arguments string:', currentToolCall.arguments);
@@ -424,7 +424,7 @@ export async function POST(request: NextRequest) {
                                 input: toolInput
                               })}\n\n`));
                             }
-                          } catch (retryError) {
+                          } catch (retryError: unknown) {
                             console.error('Retry parsing also failed:', retryError);
                           }
                         }
@@ -433,13 +433,13 @@ export async function POST(request: NextRequest) {
                       }
                     }
                   }
-                } catch (e) {
+                } catch (e: unknown) {
                   // 忽略解析错误
                 }
               }
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Stream error:', error);
           controller.error(error);
         }
@@ -454,7 +454,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in chat API:', error);
     return new Response(
       JSON.stringify({

@@ -28,7 +28,7 @@ export async function expandContent(nodeId: string, content: string): Promise<AI
     }
 
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error expanding content:', error);
     return {
       success: false,
@@ -63,7 +63,7 @@ export async function summarizeContent(nodeId: string, content: string): Promise
     }
 
     return data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error summarizing content:', error);
     return {
       success: false,

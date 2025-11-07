@@ -16,7 +16,7 @@ export async function createServerSupabaseClient() {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options })
-          } catch (error) {
+          } catch (error: unknown) {
             // 在 Server Component 中 set cookie 可能会失败
             // 这是正常的，因为 set 只在 Server Actions 或 Route Handlers 中工作
           }
@@ -24,7 +24,7 @@ export async function createServerSupabaseClient() {
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
+          } catch (error: unknown) {
             // 同上
           }
         },

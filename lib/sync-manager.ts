@@ -92,7 +92,7 @@ export class SyncManager {
 
       this.updateStatus('success')
       console.log('Full sync completed successfully')
-    } catch (error) {
+    } catch (error: unknown) {
       this.updateStatus('error')
       console.error('Full sync failed:', error)
       // 显示详细错误信息
@@ -141,7 +141,7 @@ export class SyncManager {
 
       try {
         cloudCanvas = await supabaseDB.getCanvas(canvasId)
-      } catch (fetchError) {
+      } catch (fetchError: unknown) {
         hasFetchError = true
         console.warn(`⚠️ 无法检查云端画布状态（可能网络问题），跳过画布元数据同步`)
         // 网络错误时，跳过画布创建/更新，继续同步节点
@@ -185,7 +185,7 @@ export class SyncManager {
           console.log(`Syncing chat session ${session.id} with ${session.messages.length} messages`)
           await supabaseDB.saveChatSession(this.userId, canvasId, session)
           console.log(`✅ Chat session ${session.id} synced successfully`)
-        } catch (sessionError) {
+        } catch (sessionError: unknown) {
           console.error(`❌ Failed to sync chat session ${session.id}:`, sessionError)
           console.error('Session details:', {
             id: session.id,
@@ -197,7 +197,7 @@ export class SyncManager {
       }
 
       console.log(`Canvas ${canvasId} synced to cloud`)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to sync canvas ${canvasId}:`, error)
       // 显示详细错误信息
       if (error instanceof Error) {
@@ -228,7 +228,7 @@ export class SyncManager {
       }
 
       console.log(`Canvas ${canvasId} synced from cloud`)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Failed to sync canvas from cloud:`, error)
     }
   }
@@ -260,7 +260,7 @@ export class SyncManager {
         for (const canvas of canvases) {
           await this.syncCanvasToCloud(canvas.id)
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Periodic sync failed:', error)
       }
     }, intervalMs)
@@ -351,7 +351,7 @@ export class SyncManager {
         if (op.type === 'sync_canvas') {
           await this.syncCanvasToCloud(op.canvasId)
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to process offline operation:', error)
       }
     }

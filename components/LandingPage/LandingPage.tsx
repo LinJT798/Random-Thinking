@@ -249,8 +249,8 @@ export default function LandingPage() {
             color: '#7A6F67',
           }}
         >
-          人脑是有限的<br />
-          思维是无限的
+          人脑有限<br />
+          思维无限
         </p>
 
         {/* 开始使用按钮 */}

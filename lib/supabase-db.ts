@@ -144,6 +144,7 @@ export class SupabaseDB {
       throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((node: any) => this.dbNodeToCanvasNode(node))
   }
 
@@ -233,7 +234,7 @@ export class SupabaseDB {
       } else {
         cloudNodeIds = cloudNodes?.map((n: { id: string }) => n.id) || []
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn(`⚠️ 获取云端节点时出错，跳过删除步骤`)
     }
 
@@ -346,6 +347,7 @@ export class SupabaseDB {
       throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((session: any) => ({
       id: session.id,
       canvasId: session.canvas_id,

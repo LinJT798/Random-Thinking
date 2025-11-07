@@ -117,7 +117,7 @@ export default function TerminalChat({ config, showDebugger }: TerminalChatProps
         ));
       }, data.content.length * 80); // 80ms 每个字符，与打字速度匹配
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to get AI response:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',

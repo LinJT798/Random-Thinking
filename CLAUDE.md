@@ -46,9 +46,14 @@ npm start
 
 # Run linter
 npm run lint
+
+# Type checking (no dedicated script - use Next.js build)
+npx tsc --noEmit
 ```
 
 Development server runs at http://localhost:3000
+
+**Note**: The project uses TypeScript strict mode. Build process includes type checking via Next.js. There is no dedicated test framework configured (no test script in package.json).
 
 ## Environment Setup
 
@@ -229,6 +234,30 @@ All nodes support style customization through the PropertyPanel:
 
 Access the PropertyPanel by selecting a node and pressing the Shift key.
 
+### API Routes Structure
+
+The application uses Next.js API Routes for server-side operations:
+
+```
+app/
+├── api/
+│   └── ai/              # AI-powered features
+│       ├── expand/route.ts     # Expand node content
+│       ├── summarize/route.ts  # Summarize node content
+│       ├── chat/route.ts       # AI chat with streaming (SSE)
+│       └── welcome/route.ts    # Generate welcome message
+├── auth/
+│   └── callback/route.ts       # OAuth callback handler
+├── login/page.tsx              # Login page
+├── signup/page.tsx             # Signup page (disabled)
+├── debug/page.tsx              # Debug/testing page
+├── app/page.tsx                # App fallback route
+├── page.tsx                    # Main canvas page
+└── layout.tsx                  # Root layout with providers
+```
+
+All AI routes use POST method and return JSON (except `/api/ai/chat` which uses Server-Sent Events for streaming).
+
 ### Authentication System
 
 The app supports optional user authentication via Supabase:
@@ -253,26 +282,38 @@ components/
 │   ├── Canvas.tsx            # Main canvas component
 │   ├── CanvasToolbar.tsx     # Add node buttons
 │   ├── CanvasSwitcher.tsx    # Switch between canvases
-│   └── HelpButton.tsx        # Help dialog
+│   ├── HelpButton.tsx        # Help dialog
+│   └── SettingsMenu.tsx      # User settings dropdown
 ├── Nodes/            # Different node type renderers
-│   ├── TextNode.tsx
-│   └── StickyNote.tsx
-├── MindMap/          # Mind map specific components
+│   ├── TextNode.tsx          # Standard text card
+│   ├── StickyNote.tsx        # Sticky note component
+│   ├── TextToolbar.tsx       # Node editing toolbar
+│   └── AIConfirmToolbar.tsx  # Tool call confirmation UI
+├── MindMap/          # Mind map specific components (feature disabled)
 │   ├── MindMapNode.tsx       # Hierarchical node rendering
 │   └── MindMapConnection.tsx # Parent-child connections
 ├── AI/               # AI feature UI
 │   └── AIToolbar.tsx         # Expand/summarize buttons
 ├── Chat/             # Chat system UI
 │   ├── ChatButton.tsx        # Toggle chat window
-│   └── ChatWindow.tsx        # Chat interface with streaming responses and tool call confirmation UI
+│   ├── ChatWindow.tsx        # Chat interface with streaming responses
+│   └── ChatResizer.tsx       # Resize handle for split view
 ├── Auth/             # Authentication UI
 │   ├── AuthForm.tsx          # Login/signup form
 │   └── UserMenu.tsx          # User profile dropdown
+├── LandingPage/      # Marketing/onboarding pages
+│   ├── LandingPage.tsx       # Main landing page
+│   ├── TerminalChat.tsx      # Interactive terminal demo
+│   └── ScreenTextDebugger.tsx # Text rendering debugger
 ├── PropertyPanel/    # Node styling and properties
 │   └── PropertyPanel.tsx     # Text color, background, font settings
+├── Onboarding.tsx    # First-time user guide
 ├── SyncStatus.tsx    # Cloud sync status indicator
 ├── AddToButton.tsx   # Quick add node button
 └── DraggingTextBubble.tsx # Visual feedback for text drag-to-create
+
+hooks/                # Custom React hooks
+└── useTextSelection.ts # Text selection utilities
 ```
 
 ### Design System
@@ -386,14 +427,42 @@ Mind map auto-layout is handled in `lib/mindmap-layout.ts`:
 - `calculateMindMapLayout()`: Returns Map of node IDs to new positions
 - `getAllDescendantIds()`: Gets all children recursively for collapse operations
 
-## TypeScript Path Aliases
+## TypeScript Configuration
 
-The project uses `@/*` path alias mapped to the root directory:
+**Path Aliases**: The project uses `@/*` path alias mapped to the root directory:
 
 ```typescript
 import { db } from '@/lib/db';
 import type { CanvasNode } from '@/types';
 ```
+
+**Compiler Options** (tsconfig.json):
+- Target: ES2017
+- Strict mode: Enabled
+- Module resolution: Bundler (Next.js 15)
+- JSX: Preserve (handled by Next.js)
+
+## Application Entry Points
+
+**Main Canvas Application**:
+1. `app/layout.tsx` - Root layout with AuthProvider and Toaster
+2. `app/page.tsx` - Main canvas page (client component)
+3. `components/Canvas/Canvas.tsx` - Core canvas component
+4. `lib/store.ts` - Zustand store initialization
+
+**Data Initialization Flow**:
+```
+User loads page → Layout wraps with AuthProvider
+  → page.tsx loads → Canvas component mounts
+  → Store initializes → Loads last canvas from IndexedDB
+  → Renders nodes from canvas.nodes array
+  → If authenticated → Starts sync manager
+```
+
+**First-Time User Flow**:
+- New users see onboarding component (Onboarding.tsx)
+- Empty canvas with default welcome message
+- Help button available in top-right corner
 
 ## Canvas Interaction Patterns
 
@@ -476,18 +545,38 @@ Prompts should be in Chinese and optimized for brevity since the UI targets Chin
 
 The `lib/` directory contains several specialized utilities:
 
+**AI & Context**:
+- **ai.ts**: Client-side API wrappers for AI operations (expand, summarize, chat)
 - **context-builder.ts**: Formats canvas state for AI chat context
   - `formatNodesForContext()`: Converts nodes to structured Chinese text
   - `detectNodeChanges()`: Tracks modifications since chat started
   - `buildIncrementalContext()`: Generates change summaries
+
+**Database**:
+- **db.ts**: IndexedDB wrapper using Dexie.js (local-first storage)
+- **supabase-db.ts**: Supabase database operations (cloud sync)
+- **sync-manager.ts**: Bidirectional sync between IndexedDB and Supabase
+
+**State Management**:
+- **store.ts**: Zustand store with canvas, node, chat, and sync state
+
+**Authentication**:
+- **supabase.ts**: Browser-side Supabase client
+- **supabase-server.ts**: Server-side Supabase client for API routes
+- **auth-context.tsx**: React context for auth state
+
+**Layout & Positioning**:
 - **mindmap-layout.ts**: Auto-layout algorithm for mind maps
   - `calculateMindMapLayout()`: Tree-based position calculation
   - `getAllDescendantIds()`: Recursive child node traversal
 - **mindmap-creator.ts**: Batch creation of mind map structures
 - **smart-layout.ts**: Intelligent node positioning to avoid overlaps
+
+**Utilities**:
 - **text-size-calculator.ts**: DOM-based text measurement for node sizing
-- **uuid.ts**: Centralized UUID generation
-- **ai.ts**: Client-side API wrappers for AI operations
+- **uuid.ts**: Centralized UUID generation (`crypto.randomUUID()`)
+- **types/index.ts**: Core TypeScript interfaces (CanvasNode, Canvas, ChatMessage, etc.)
+- **types/database.types.ts**: Supabase-generated database types
 
 ## Error Handling Strategy
 
@@ -541,11 +630,26 @@ The application implements multi-layered error handling:
 
 ## Testing & Development
 
-- The app is local-first with no backend dependency beyond AI API calls
-- Test canvas operations in browser DevTools → Application → IndexedDB
-- Use React DevTools to inspect Zustand store state
+**Testing Strategy**:
+- ⚠️ **No automated tests configured** - No test framework (Jest, Vitest, etc.) is set up
+- Manual testing via browser DevTools
+- TypeScript strict mode provides compile-time safety
+
+**Development Tools**:
+- **Browser DevTools → Application → IndexedDB**: Inspect canvas/nodes/chatSessions tables
+- **React DevTools**: Monitor Zustand store state and component re-renders
+- **Network Tab**: Debug AI API calls and streaming responses
+- **Debug Route**: `/debug` page available for testing (if exists)
+
+**Data Persistence Verification**:
 - All node operations should persist immediately to IndexedDB
 - Chat history persists per canvas and survives page reloads
+- Use browser's Application tab to verify data structure
+
+**Local Development**:
+- The app is local-first with no backend dependency beyond AI API calls
+- Can develop fully offline after initial `npm install`
+- Supabase is optional (only needed for cloud sync testing)
 
 ## Common Development Tasks
 

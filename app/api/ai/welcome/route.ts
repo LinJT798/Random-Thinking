@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       content,
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Welcome API error:', error);
     // 返回详细错误信息
     return NextResponse.json(

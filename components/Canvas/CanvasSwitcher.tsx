@@ -54,7 +54,7 @@ export function CanvasSwitcher() {
 
       // 重新加载列表
       await loadCanvasesList()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to create canvas:', error)
     }
   }
@@ -95,7 +95,7 @@ export function CanvasSwitcher() {
 
       setIsOpen(false)
       console.log('Canvas switched successfully')
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to switch canvas:', error)
     } finally {
       switchingRef.current = false

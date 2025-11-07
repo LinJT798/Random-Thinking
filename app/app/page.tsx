@@ -75,7 +75,7 @@ export default function Home() {
           try {
             await syncManager.fullSync();
             toast.success('数据加载完成', { id: 'initial-sync' });
-          } catch (error) {
+          } catch (error: unknown) {
             console.error('Initial sync failed:', error);
             toast.dismiss('initial-sync');
             // 即使同步失败，也允许用户使用（会创建新画布）
@@ -110,7 +110,7 @@ export default function Home() {
           setCanvasId(id);
           console.log('Canvas created:', id);
           // 后台同步新画布（不阻塞）
-          syncManager.syncCanvasToCloud(id).catch((err) => {
+          syncManager.syncCanvasToCloud(id).catch((err: unknown) => {
             console.error('Failed to sync new canvas:', err);
           });
         }
@@ -127,7 +127,7 @@ export default function Home() {
               console.log('✅ Background sync completed');
               // 静默同步，不显示toast（避免打扰用户）
             })
-            .catch((error) => {
+            .catch((error: unknown) => {
               console.error('Background sync failed:', error);
               // 后台同步失败不显示错误（不打扰用户）
             });
@@ -141,7 +141,7 @@ export default function Home() {
         if (!hasSeenOnboarding) {
           setShowOnboarding(true);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to initialize:', error);
         toast.error('初始化失败，请刷新页面重试');
         initializingRef.current = false;

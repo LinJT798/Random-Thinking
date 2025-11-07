@@ -59,7 +59,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           router.push('/')
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setError('操作失败，请重试')
     } finally {
       setLoading(false)

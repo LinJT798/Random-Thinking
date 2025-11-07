@@ -141,7 +141,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
               dockedChatId = parsed.dockedChatId;
               dockedWidth = parsed.dockedWidth || 30;
               console.log(`恢复画布 ${canvasId} 的分屏状态:`, { dockedChatId, dockedWidth });
-            } catch (e) {
+            } catch (e: unknown) {
               console.warn('Failed to parse docked state:', e);
             }
           }
@@ -176,7 +176,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           console.log(`💾 保存最后使用的画布: ${canvasId}`);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to load canvas:', error);
       set({ loading: false });
     }
@@ -234,7 +234,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       }
 
       return nodeId;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error in addNode:', error);
       throw error;
     }
@@ -619,7 +619,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       // 添加用户消息到本地和数据库
       await addChatMessage(chatId, 'user', content);
       // API 调用会在 ChatWindow 组件中处理
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to send message:', error);
     }
   },

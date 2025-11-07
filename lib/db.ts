@@ -229,7 +229,7 @@ export async function initDatabase(): Promise<void> {
   try {
     await db.open();
     console.log('Database initialized successfully');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to initialize database:', error);
     throw error;
   }
