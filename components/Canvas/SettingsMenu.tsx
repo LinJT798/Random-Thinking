@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Dialog from '@radix-ui/react-dialog';
 import { CanvasSwitcher } from './CanvasSwitcher';
@@ -14,6 +15,7 @@ interface SettingsMenuProps {
 }
 
 export default function SettingsMenu({ syncStatus, onOpenOnboarding }: SettingsMenuProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const helpContentRef = useRef<HTMLDivElement>(null);
@@ -129,6 +131,30 @@ export default function SettingsMenu({ syncStatus, onOpenOnboarding }: SettingsM
                 <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#7A6F67' }}>操作指南</span>
               </div>
               <span className="text-sm" style={{ color: '#3D342C' }}>查看快捷键和操作说明</span>
+            </button>
+
+            {/* 分隔线 */}
+            <div style={{ borderTop: '1px solid rgba(122, 111, 103, 0.15)' }} />
+
+            {/* 返回首页 */}
+            <button
+              onClick={() => {
+                setOpen(false);
+                // 清除已访问标记，重新显示首页
+                localStorage.removeItem('landing_visited');
+                router.push('/');
+              }}
+              className="w-full px-4 py-3 transition-colors text-left"
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139, 142, 99, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4" style={{ color: '#7A6F67' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#7A6F67' }}>返回首页</span>
+              </div>
+              <span className="text-sm" style={{ color: '#3D342C' }}>重新查看产品介绍</span>
             </button>
 
             {/* 分隔线 */}
