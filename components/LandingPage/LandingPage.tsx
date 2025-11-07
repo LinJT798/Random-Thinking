@@ -55,9 +55,15 @@ export default function LandingPage() {
   // 快捷键切换调试器（Ctrl/Cmd + Shift + D，隐藏入口）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 调试器快捷键
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'd') {
         e.preventDefault();
         setShowDebugger(prev => !prev);
+      }
+      // Enter 键快速进入（避免和终端输入冲突，检查焦点不在输入框）
+      if (e.key === 'Enter' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        handleStart();
       }
     };
 
@@ -215,7 +221,7 @@ export default function LandingPage() {
             color: '#3D342C',
           }}
         >
-          无边记 AI
+          Omi
         </h1>
 
         {/* Slogan */}
@@ -239,37 +245,21 @@ export default function LandingPage() {
           让 AI 帮你扩展思维边界
         </p>
 
-        {/* 功能特点 */}
-        <div className="flex gap-8 mb-12">
-          <div className="flex flex-col items-center gap-2 px-4">
-            <div className="text-3xl">💭</div>
-            <div className="text-sm font-medium" style={{ color: '#3D342C' }}>无限画布</div>
-          </div>
-          <div className="flex flex-col items-center gap-2 px-4">
-            <div className="text-3xl">🤖</div>
-            <div className="text-sm font-medium" style={{ color: '#3D342C' }}>AI 辅助</div>
-          </div>
-          <div className="flex flex-col items-center gap-2 px-4">
-            <div className="text-3xl">🔒</div>
-            <div className="text-sm font-medium" style={{ color: '#3D342C' }}>本地优先</div>
-          </div>
-        </div>
-
         {/* 开始使用按钮 */}
         <button
           onClick={handleStart}
-          className="px-12 py-4 text-lg font-semibold rounded-2xl glass-effect transition-all duration-300 hover:scale-105"
+          className="px-12 py-4 text-lg rounded-2xl paper-texture-light glass-effect transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
           style={{
-            background: 'linear-gradient(135deg, #8B8E63 0%, #C6C8AA 100%)',
-            color: 'white',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 8px 24px rgba(139, 142, 99, 0.3)',
+            background: '#F8F4EF',
+            color: '#3D342C',
+            border: '1px solid #EDE4D5',
+            boxShadow: '0 4px 12px rgba(61, 52, 44, 0.1)',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(139, 142, 99, 0.4)';
+            e.currentTarget.style.boxShadow = '0 8px 20px rgba(61, 52, 44, 0.15)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 142, 99, 0.3)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(61, 52, 44, 0.1)';
           }}
         >
           开始使用

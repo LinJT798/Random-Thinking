@@ -1,31 +1,53 @@
 'use client'
 
+import { AuthForm } from '@/components/Auth/AuthForm'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import Link from 'next/link'
 
 export default function SignUpPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
-  // 如果已登录，重定向到首页
   useEffect(() => {
     if (!loading && user) {
-      router.push('/')
+      router.push('/app')
     }
   }, [user, loading, router])
 
-  // 未登录时，直接重定向到登录页面
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
-  }, [loading, user, router])
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F8F4EF' }}>
+        <div style={{ color: '#7A6F67' }}>加载中...</div>
+      </div>
+    )
+  }
 
-  // 显示加载状态
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#F8F4EF' }}>
-      <div style={{ color: '#7A6F67' }}>正在跳转...</div>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ background: '#F8F4EF' }}>
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-bold" style={{ color: '#3D342C' }}>
+            注册 Omi
+          </h2>
+          <p className="mt-2 text-center text-sm" style={{ color: '#7A6F67' }}>
+            扩展思维，记录灵感
+          </p>
+        </div>
+        <div className="mt-8 py-8 px-6 glass-effect rounded-2xl" style={{
+          background: '#EDE4D5',
+          border: '1px solid rgba(255, 255, 255, 0.3)'
+        }}>
+          <AuthForm mode="signup" />
+          <div className="mt-4 text-center text-sm" style={{ color: '#7A6F67' }}>
+            已有账号？{' '}
+            <Link href="/login" className="font-medium hover:underline" style={{ color: '#8B8E63' }}>
+              立即登录
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

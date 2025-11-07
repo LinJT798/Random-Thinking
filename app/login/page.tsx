@@ -4,6 +4,7 @@ import { AuthForm } from '@/components/Auth/AuthForm'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const { user, loading } = useAuth()
@@ -11,7 +12,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/')
+      router.push('/app')
     }
   }, [user, loading, router])
 
@@ -28,10 +29,10 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold" style={{ color: '#3D342C' }}>
-            登录无边记 AI
+            登录 Omi
           </h2>
           <p className="mt-2 text-center text-sm" style={{ color: '#7A6F67' }}>
-            无限画布笔记工具，让思维自由延展
+            扩展思维，记录灵感
           </p>
         </div>
         <div className="mt-8 py-8 px-6 glass-effect rounded-2xl" style={{
@@ -39,6 +40,12 @@ export default function LoginPage() {
           border: '1px solid rgba(255, 255, 255, 0.3)'
         }}>
           <AuthForm mode="signin" />
+          <div className="mt-4 text-center text-sm" style={{ color: '#7A6F67' }}>
+            还没有账号？{' '}
+            <Link href="/signup" className="font-medium hover:underline" style={{ color: '#8B8E63' }}>
+              立即注册
+            </Link>
+          </div>
         </div>
       </div>
     </div>

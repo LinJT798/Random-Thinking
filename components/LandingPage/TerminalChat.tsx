@@ -153,6 +153,8 @@ export default function TerminalChat({ config, showDebugger }: TerminalChatProps
           // 隐藏滚动条
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
+          // 底部添加少量内边距，确保文字不会被截断
+          paddingBottom: `${config.fontSize * 0.25}px`,
         }}
       >
         {/* 初始消息 - 打字机效果 */}
