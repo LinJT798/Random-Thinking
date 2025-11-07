@@ -23,12 +23,12 @@ export default function LandingPage() {
   const [showDebugger, setShowDebugger] = useState(false); // 默认关闭调试器
   const [config, setConfig] = useState<ScreenTextConfig>({
     left: 63.5,
-    top: 38.5,
+    top: 39,
     width: 27,
     height: 27,
-    rotateX: -1,
-    rotateY: 18.5,
-    rotateZ: -2.5,
+    rotateX: -0.5,
+    rotateY: 24,
+    rotateZ: -3.5,
     perspective: 2000,
     fontSize: 16,
     color: '#00FF41', // 经典终端绿
@@ -52,11 +52,11 @@ export default function LandingPage() {
     localStorage.setItem('landing_screen_config', JSON.stringify(newConfig));
   };
 
-  // 快捷键切换调试器（Ctrl/Cmd + Shift + D，隐藏入口）
+  // 快捷键切换调试器（Ctrl/Cmd + Shift + E，隐藏入口）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 调试器快捷键
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'd') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
         e.preventDefault();
         setShowDebugger(prev => !prev);
       }
@@ -71,9 +71,17 @@ export default function LandingPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleStart = () => {
+  const handleStart = (e?: React.MouseEvent) => {
+    // 阻止任何默认行为
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     // 标记已访问过首页
     localStorage.setItem('landing_visited', 'true');
+
+    // 立即跳转，不等待任何动画
     router.push('/app');
   };
 
@@ -231,7 +239,7 @@ export default function LandingPage() {
             color: '#7A6F67',
           }}
         >
-          扩展思维，记录灵感
+          让思考从这里开始
         </p>
 
         {/* 核心理念 */}
@@ -241,13 +249,13 @@ export default function LandingPage() {
             color: '#7A6F67',
           }}
         >
-          人脑的工作记忆是有限的<br />
-          让 AI 帮你扩展思维边界
+          人脑是有限的<br />
+          思维是无限的
         </p>
 
         {/* 开始使用按钮 */}
         <button
-          onClick={handleStart}
+          onClick={(e) => handleStart(e)}
           className="px-12 py-4 text-lg rounded-2xl paper-texture-light glass-effect transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
           style={{
             background: '#F8F4EF',

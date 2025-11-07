@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { supabase, isSupabaseConfigured } from './supabase'
 
 interface AuthContextType {
   user: User | null
@@ -21,10 +21,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // 如果 Supabase 未配置，直接设置为未登录状态
+    if (!isSupabaseConfigured()) {
+      console.warn('⚠️ Supabase not configured, authentication disabled')
+      setUser(null)
+      setSession(null)
+      setLoading(false)
+      return
+    }
+
     // 获取初始会话
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      setLoading(false)
+    }).catch((error) => {
+      console.error('Failed to get session:', error)
+      setUser(null)
+      setSession(null)
       setLoading(false)
     })
 
@@ -41,6 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signUp = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      return { error: new Error('Supabase not configured') }
+    }
+
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -56,6 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      return { error: new Error('Supabase not configured') }
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -77,7 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('Failed to clear local data:', error)
     }
 
-    await supabase.auth.signOut()
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut()
+    }
   }
 
   const value = {

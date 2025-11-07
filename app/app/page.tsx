@@ -60,22 +60,31 @@ export default function Home() {
         syncManager.setUserId(userId);
         syncManager.setStatusChangeCallback(setSyncStatus);
 
-        // 执行全量同步
-        console.log('Starting full sync...');
-        toast.loading('正在同步数据...', { id: 'initial-sync' });
-        await syncManager.fullSync();
-        toast.success('数据同步完成', { id: 'initial-sync' });
-
-        // 启动定时同步（30秒）
-        syncManager.startPeriodicSync(30000);
-
-        console.log('✅ Sync enabled successfully');
-
-        // 加载或创建画布
+        // 检查本地是否有数据
         const { db } = await import('@/lib/db');
-        const allCanvases = await db.getAllCanvases();
+        const localCanvases = await db.getAllCanvases();
+        const hasLocalData = localCanvases.length > 0;
 
-        console.log(`Found ${allCanvases.length} existing canvases`);
+        console.log(`Found ${localCanvases.length} local canvases`);
+
+        // 如果本地没有数据，需要先同步云端数据
+        if (!hasLocalData) {
+          console.log('No local data, syncing from cloud first...');
+          toast.loading('正在从云端加载数据...', { id: 'initial-sync' });
+
+          try {
+            await syncManager.fullSync();
+            toast.success('数据加载完成', { id: 'initial-sync' });
+          } catch (error) {
+            console.error('Initial sync failed:', error);
+            toast.dismiss('initial-sync');
+            // 即使同步失败，也允许用户使用（会创建新画布）
+          }
+        }
+
+        // 重新获取画布列表（可能已经从云端同步）
+        const allCanvases = await db.getAllCanvases();
+        console.log(`Total canvases: ${allCanvases.length}`);
 
         if (allCanvases.length > 0) {
           // 尝试加载上次使用的画布
@@ -99,13 +108,33 @@ export default function Home() {
           const store = useCanvasStore.getState();
           const id = await store.createNewCanvas('我的思维画布');
           setCanvasId(id);
-          await syncManager.syncCanvasToCloud(id);
-          console.log('Canvas created and synced:', id);
+          console.log('Canvas created:', id);
+          // 后台同步新画布（不阻塞）
+          syncManager.syncCanvasToCloud(id).catch((err) => {
+            console.error('Failed to sync new canvas:', err);
+          });
         }
 
         setIsReady(true);
         initializedRef.current = true;
-        console.log('Initialization completed');
+        console.log('✅ Initialization completed');
+
+        // 如果本地有数据，后台异步同步云端更新
+        if (hasLocalData) {
+          console.log('Starting background sync...');
+          syncManager.fullSync()
+            .then(() => {
+              console.log('✅ Background sync completed');
+              // 静默同步，不显示toast（避免打扰用户）
+            })
+            .catch((error) => {
+              console.error('Background sync failed:', error);
+              // 后台同步失败不显示错误（不打扰用户）
+            });
+        }
+
+        // 启动定时同步（30秒）
+        syncManager.startPeriodicSync(30000);
 
         // 检查是否是第一次登录，显示新手引导
         const hasSeenOnboarding = localStorage.getItem('onboarding_completed');

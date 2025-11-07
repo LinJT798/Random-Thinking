@@ -1,7 +1,23 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
+// 检查 Supabase 是否已配置
+export const isSupabaseConfigured = () => {
+  return !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_url_here' &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== 'your_anon_key_here'
+  )
+}
+
 // 创建 Supabase 浏览器客户端（用于客户端组件）
 export function createClient() {
+  if (!isSupabaseConfigured()) {
+    console.warn('⚠️ Supabase not configured, cloud sync disabled')
+    // 返回一个空客户端，避免运行时错误
+    return null as any
+  }
+
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,6 +38,11 @@ export const supabase = createClient()
  * 在执行 Supabase 操作前调用此函数
  */
 export async function ensureValidSession() {
+  // 如果 Supabase 未配置，直接返回 false
+  if (!isSupabaseConfigured() || !supabase) {
+    return false
+  }
+
   try {
     const { data: { session }, error } = await supabase.auth.getSession()
 

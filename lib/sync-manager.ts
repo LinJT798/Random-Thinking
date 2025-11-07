@@ -1,6 +1,6 @@
 import { supabaseDB } from './supabase-db'
 import { db } from './db'
-import { ensureValidSession } from './supabase'
+import { ensureValidSession, isSupabaseConfigured } from './supabase'
 import type { CanvasData, CanvasNode } from '@/types'
 
 /**
@@ -47,6 +47,12 @@ export class SyncManager {
 
   async fullSync(): Promise<void> {
     if (!this.userId) throw new Error('User ID not set')
+
+    // 检查 Supabase 是否配置
+    if (!isSupabaseConfigured()) {
+      console.warn('⚠️ Supabase not configured, skipping cloud sync')
+      return
+    }
 
     this.updateStatus('syncing')
 
@@ -108,6 +114,12 @@ export class SyncManager {
 
   async syncCanvasToCloud(canvasId: string): Promise<void> {
     if (!this.userId) return
+
+    // 检查 Supabase 是否配置
+    if (!isSupabaseConfigured()) {
+      console.warn('⚠️ Supabase not configured, skipping cloud sync')
+      return
+    }
 
     try {
       // 确保会话有效（静默检查，不影响用户体验）
@@ -230,6 +242,18 @@ export class SyncManager {
 
     this.syncInterval = setInterval(async () => {
       if (!navigator.onLine) return // 离线时跳过
+
+      // 检查 Supabase 是否配置
+      if (!isSupabaseConfigured()) {
+        return
+      }
+
+      // 检查 session 是否有效
+      const sessionValid = await ensureValidSession()
+      if (!sessionValid) {
+        console.warn('⚠️ Session invalid during periodic sync, skipping (data saved locally)')
+        return
+      }
 
       try {
         const canvases = await db.getAllCanvases()
