@@ -31,8 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 获取初始会话
-    supabase.auth.getSession().then(({ data }) => {
-      const session = data?.session ?? null
+    supabase.auth.getSession().then((response: { data: { session: Session | null } }) => {
+      const session = response.data?.session ?? null
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
