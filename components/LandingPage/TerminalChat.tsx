@@ -210,7 +210,7 @@ export default function TerminalChat({ config, showDebugger }: TerminalChatProps
         <div className="flex-1 relative overflow-hidden" style={{ height: `${config.fontSize * 1.5}px` }}>
           {/* 隐藏输入框，只用于功能 */}
           <textarea
-            ref={inputRef as any}
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

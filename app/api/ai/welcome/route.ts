@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
         role: 'user',
         content: SYSTEM_PROMPT,
       },
-      ...history.map((msg: any) => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
+      ...history.map((msg: { role: string; content: string }) => ({
+        role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
         content: msg.content,
       })),
       {

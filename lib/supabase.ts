@@ -15,6 +15,7 @@ export function createClient() {
   if (!isSupabaseConfigured()) {
     console.warn('⚠️ Supabase not configured, cloud sync disabled')
     // 返回一个空客户端，避免运行时错误
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return null as any
   }
 
