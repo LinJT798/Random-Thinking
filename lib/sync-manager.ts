@@ -318,6 +318,36 @@ export class SyncManager {
     await this.syncCanvasToCloud(canvasId)
   }
 
+  // 删除画布（同步删除云端数据）
+  async deleteCanvasFromCloud(canvasId: string) {
+    if (!this.userId) {
+      console.warn('⚠️ No user ID, skipping cloud deletion')
+      return
+    }
+
+    // 检查 Supabase 是否配置
+    if (!isSupabaseConfigured()) {
+      console.warn('⚠️ Supabase not configured, skipping cloud deletion')
+      return
+    }
+
+    try {
+      // 确保会话有效
+      const sessionValid = await ensureValidSession()
+      if (!sessionValid) {
+        console.warn('⚠️ 会话无效，跳过云端删除（本地数据已删除）')
+        return
+      }
+
+      // 删除云端画布（软删除）
+      await supabaseDB.deleteCanvas(canvasId)
+      console.log(`✅ Canvas ${canvasId} deleted from cloud`)
+    } catch (error: unknown) {
+      console.error(`❌ Failed to delete canvas ${canvasId} from cloud:`, error)
+      // 不抛出错误，允许本地删除成功
+    }
+  }
+
   // ========================================
   // 离线队列
   // ========================================

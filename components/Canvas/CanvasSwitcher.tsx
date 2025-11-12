@@ -108,15 +108,27 @@ export function CanvasSwitcher() {
 
     if (!confirm('确定要删除这个画布吗？')) return
 
-    await db.deleteCanvas(canvasId)
-    await loadCanvasesList()
+    try {
+      // 1. 删除本地数据
+      await db.deleteCanvas(canvasId)
 
-    // 如果删除的是当前画布，切换到第一个画布
-    if (currentCanvas?.id === canvasId && canvases.length > 1) {
-      const remainingCanvases = canvases.filter(c => c.id !== canvasId)
-      if (remainingCanvases.length > 0) {
-        await loadCanvas(remainingCanvases[0].id)
+      // 2. 同步删除云端数据（后台执行，不阻塞 UI）
+      syncManager.deleteCanvasFromCloud(canvasId).catch(err => {
+        console.warn('Background cloud deletion failed:', err)
+      })
+
+      // 3. 重新加载画布列表
+      await loadCanvasesList()
+
+      // 4. 如果删除的是当前画布，切换到第一个画布
+      if (currentCanvas?.id === canvasId && canvases.length > 1) {
+        const remainingCanvases = canvases.filter(c => c.id !== canvasId)
+        if (remainingCanvases.length > 0) {
+          await loadCanvas(remainingCanvases[0].id)
+        }
       }
+    } catch (error: unknown) {
+      console.error('Failed to delete canvas:', error)
     }
   }
 
